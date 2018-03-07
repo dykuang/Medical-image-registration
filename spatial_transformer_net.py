@@ -30,8 +30,7 @@ class SpatialTransformer(Layer):
 
     def build(self, input_shape):
         self.locnet.build(input_shape)
-        self.trainable_weights = self.locnet.trainable_weights
-        self.constraints = self.locnet.constraints
+        super(SpatialTransformer, self).build(input_shape)
 
     def compute_output_shape(self, input_shape):
         output_size = self.output_size
