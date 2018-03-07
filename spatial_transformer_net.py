@@ -30,6 +30,7 @@ class SpatialTransformer(Layer):
 
     def build(self, input_shape):
         self.locnet.build(input_shape)
+        self.trainable_weights = self.locnet.trainable_weights
         super(SpatialTransformer, self).build(input_shape)
 
     def compute_output_shape(self, input_shape):
@@ -131,7 +132,7 @@ class SpatialTransformer(Layer):
         width = tf.shape(input_shape)[2]
         num_channels = tf.shape(input_shape)[3]
 
-        affine_transformation = tf.reshape(affine_transformation, shape=(batch_size,2,3))
+#        affine_transformation = tf.reshape(affine_transformation, shape=(batch_size,2,3))
 
         affine_transformation = tf.reshape(affine_transformation, (-1, 2, 3))
         affine_transformation = tf.cast(affine_transformation, 'float32')
