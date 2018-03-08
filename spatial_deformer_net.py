@@ -20,6 +20,9 @@ Modification list:
      _transform:
       _meshgrid: concatenate ones seems not necessary 
                  it would be nice to adjust the density of it
+                 
+Thoughts:
+    Interpolate the deformation as well to make dimension match?
 
 
 Will need to extend to 3d          
@@ -160,6 +163,7 @@ class SpatialDeformer(Layer):
 #        transformed_grid = tf.matmul(affine_transformation, indices_grid)
         
         deformation = tf.reshape(deformation, shape = (batch_size, 2, -1) )
+#        deformation = tf.cast(deformation, 'float32')
         transformed_grid = tf.add(deformation, indices_grid) # are they of the same shape?
         x_s = tf.slice(transformed_grid, [0, 0, 0], [-1, 1, -1])
         y_s = tf.slice(transformed_grid, [0, 1, 0], [-1, 1, -1])
