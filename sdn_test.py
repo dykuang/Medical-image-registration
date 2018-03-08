@@ -57,14 +57,14 @@ locnet = Sequential()
 
 locnet.add(Conv2D(20, (5, 5), padding = 'same', input_shape=input_shape))
 locnet.add(Activation('relu'))
-locnet.add(MaxPooling2D(pool_size=(2,2)))
+locnet.add(MaxPooling2D(pool_size=(3,3)))
 locnet.add(Conv2D(20, (5, 5), padding = 'same'))
 locnet.add(Activation('relu'))
-locnet.add(MaxPooling2D(pool_size=(2,2)))
+#locnet.add(MaxPooling2D(pool_size=(2,2)))
 
 
-locnet.add(UpSampling2D( (2, 2) ))
-locnet.add(Conv2D(20, (5,5), padding = 'same')) # Transpose/Deconvolve or not?
+#locnet.add(UpSampling2D( (2, 2) ))
+#locnet.add(Conv2D(20, (5,5), padding = 'same')) # Transpose/Deconvolve or not?
 #locnet.add(UpSampling2D( (2, 2)))
 locnet.add(Conv2D(2, (5,5), padding = 'same'))
 
@@ -72,7 +72,7 @@ locnet.add(Conv2D(2, (5,5), padding = 'same'))
 model = Sequential()
 
 model.add(SpatialDeformer(localization_net=locnet,
-                             output_size=(30,30), 
+                             output_size=(20,20),  # this affects the grid size, should be the same as output of above for deformation
                              input_shape=input_shape))
 
 model.add(Conv2D(32, (3, 3), padding='same'))
