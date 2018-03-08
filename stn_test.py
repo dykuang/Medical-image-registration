@@ -74,7 +74,7 @@ locnet.add(Dense(6, weights=weights))
 model = Sequential()
 
 model.add(SpatialTransformer(localization_net=locnet,
-                             output_size=(30,30), input_shape=input_shape))
+                             output_size=(60,60), input_shape=input_shape))
 
 model.add(Convolution2D(32, (3, 3), padding='same'))
 model.add(Activation('relu'))
@@ -96,7 +96,7 @@ XX = model.input
 YY = model.layers[0].output
 F = K.function([XX], [YY])
 
-nb_epochs = 10 # you probably want to go longer than this
+nb_epochs = 2 # you probably want to go longer than this
 batch_size = 256
 fig = plt.figure()
 try:

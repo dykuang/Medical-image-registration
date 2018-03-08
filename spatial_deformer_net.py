@@ -17,9 +17,9 @@ TODO:
      
 Modification list: 
            call: 
-     _transform:
+     _transform: Just adding deformation does not seem to change. More epochs?
       _meshgrid: concatenate ones seems not necessary 
-                 it would be nice to adjust the density of it
+
                  
 Thoughts:
     Interpolate the deformation as well to make dimension match?
@@ -164,7 +164,8 @@ class SpatialDeformer(Layer):
         
         deformation = tf.reshape(deformation, shape = (batch_size, 2, -1) )
 #        deformation = tf.cast(deformation, 'float32')
-        transformed_grid = tf.add(deformation, indices_grid) # are they of the same shape?
+        
+        transformed_grid = deformation + indices_grid # are they of the same shape?
         x_s = tf.slice(transformed_grid, [0, 0, 0], [-1, 1, -1])
         y_s = tf.slice(transformed_grid, [0, 1, 0], [-1, 1, -1])
         x_s_flatten = tf.reshape(x_s, [-1])

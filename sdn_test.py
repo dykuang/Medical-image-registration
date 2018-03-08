@@ -95,6 +95,10 @@ XX = model.input
 YY = model.layers[0].output
 F = K.function([XX], [YY])
 
+XX_loc = locnet.input
+DD = locnet.layers[5].output
+DF = K.function([XX_loc], [DD])
+
 nb_epochs = 10 # you probably want to go longer than this
 batch_size = 256
 fig = plt.figure()
