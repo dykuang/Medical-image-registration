@@ -90,6 +90,7 @@ model.add(Dense(nb_classes))
 model.add(Activation('softmax'))
 
 model.compile(loss='categorical_crossentropy', optimizer='adam')
+# optimizers.SGD(lr=0.005, decay=1e-6, momentum=0.9, nesterov=True)
 
 XX = model.input
 YY = model.layers[0].output
@@ -99,7 +100,7 @@ XX_loc = locnet.input
 DD = locnet.layers[5].output
 DF = K.function([XX_loc], [DD])
 
-nb_epochs = 5 # you probably want to go longer than this
+nb_epochs = 20 # you probably want to go longer than this
 batch_size = 256
 #fig = plt.figure()
 try:

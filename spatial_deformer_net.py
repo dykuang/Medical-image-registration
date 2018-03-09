@@ -28,9 +28,6 @@ Thoughts:
 Will need to extend to 3d          
 """
 
-
-
-
 class SpatialDeformer(Layer):
 
     def __init__(self,
