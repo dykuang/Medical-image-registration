@@ -57,7 +57,7 @@ locnet = Sequential()
 
 locnet.add(Conv2D(20, (5, 5), padding = 'same', input_shape=input_shape))
 locnet.add(Activation('relu'))
-locnet.add(MaxPooling2D(pool_size=(3,3)))
+locnet.add(MaxPooling2D(pool_size=(2,2)))
 locnet.add(Conv2D(20, (5, 5), padding = 'same'))
 locnet.add(Activation('relu'))
 #locnet.add(MaxPooling2D(pool_size=(2,2)))
@@ -72,7 +72,7 @@ locnet.add(Conv2D(2, (5,5), padding = 'same'))
 model = Sequential()
 
 model.add(SpatialDeformer(localization_net=locnet,
-                             output_size=(20,20),  # this affects the grid size, should be the same as output of above for deformation
+                             output_size=(30,30),  # this affects the grid size, should be the same as output of above for deformation
                              input_shape=input_shape))
 
 model.add(Conv2D(32, (3, 3), padding='same'))
@@ -99,9 +99,9 @@ XX_loc = locnet.input
 DD = locnet.layers[5].output
 DF = K.function([XX_loc], [DD])
 
-nb_epochs = 10 # you probably want to go longer than this
+nb_epochs = 5 # you probably want to go longer than this
 batch_size = 256
-fig = plt.figure()
+#fig = plt.figure()
 try:
     for e in range(nb_epochs):
         print('-'*40)
@@ -136,7 +136,9 @@ except KeyboardInterrupt:
 
 Xaug = X_train[:9]
 Xresult = F([Xaug.astype('float32')])
+xdeform = DF([Xaug])
 
+plt.figure() 
 for i in range(9):
     plt.subplot(3, 3, i+1)
     plt.imshow(np.squeeze(Xaug[i]), cmap='gray')
@@ -146,4 +148,16 @@ plt.figure()
 for i in range(9):
     plt.subplot(3, 3, i+1)
     plt.imshow(np.squeeze(Xresult[0][i]), cmap='gray')
+    plt.axis('off')
+    
+plt.figure()    
+for i in range(9):
+    plt.subplot(3, 3, i+1)
+    plt.imshow(np.squeeze(xdeform[0][i])[:,:,0], cmap='gray')
+    plt.axis('off')
+    
+plt.figure()    
+for i in range(9):
+    plt.subplot(3, 3, i+1)
+    plt.imshow(np.squeeze(xdeform[0][i])[:,:,1], cmap='gray')
     plt.axis('off')

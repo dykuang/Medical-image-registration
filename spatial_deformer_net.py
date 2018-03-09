@@ -162,10 +162,23 @@ class SpatialDeformer(Layer):
 
 #        transformed_grid = tf.matmul(affine_transformation, indices_grid)
         
-        deformation = tf.reshape(deformation, shape = (batch_size, 2, -1) )
-#        deformation = tf.cast(deformation, 'float32')
         
-        transformed_grid = deformation + indices_grid # are they of the same shape?
+#        deformation = tf.cast(deformation, 'float32')
+#        
+        
+#        x_s_df = tf.slice(indices_grid, [0, 0, 0], [-1, 1, -1])
+#        y_s_df = tf.slice(indices_grid, [0, 1, 0], [-1, 1, -1])
+#        x_s_df_flatten = tf.reshape(x_s_df, [-1])
+#        y_s__df_flatten = tf.reshape(y_s_df, [-1])
+#
+#        deformation_interp = self._interpolate(deformation,
+#                                               x_s_df_flatten,
+#                                               y_s__df_flatten,
+#                                               output_size)
+        
+        deformation_interp = tf.reshape(deformation, shape = (batch_size, 2, -1) )
+        
+        transformed_grid = deformation_interp + indices_grid # are they of the same shape?
         x_s = tf.slice(transformed_grid, [0, 0, 0], [-1, 1, -1])
         y_s = tf.slice(transformed_grid, [0, 1, 0], [-1, 1, -1])
         x_s_flatten = tf.reshape(x_s, [-1])
