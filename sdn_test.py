@@ -15,13 +15,14 @@ from scipy.misc import imresize
 from keras.datasets import mnist
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, UpSampling2D
+from keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, UpSampling2D, BatchNormalization
 from keras.utils import np_utils
 from keras.utils import np_utils, generic_utils
 from keras.optimizers import Adam, SGD
 
 import keras.backend as K
 from spatial_deformer_net import SpatialDeformer
+from spatial_transformer_net import SpatialTransformer
 
 #batch_size = 128
 nb_classes = 10
@@ -52,6 +53,12 @@ input_shape =  np.squeeze(X_train.shape[1:])
 input_shape = (60,60,1)
 print("Input shape:",input_shape)
 
+#b = np.zeros((2, 1), dtype='float32')
+#b[0, 0] = 0
+#b[1, 0] = 0
+#W = np.zeros((50, 2), dtype='float32')
+#weights = [W, b.flatten()]
+
 
 locnet = Sequential()
 
@@ -59,17 +66,47 @@ locnet.add(Conv2D(20, (5, 5), padding = 'same', input_shape=input_shape))
 locnet.add(Activation('relu'))
 locnet.add(MaxPooling2D(pool_size=(2,2)))
 locnet.add(Conv2D(20, (5, 5), padding = 'same'))
+#locnet.add(BatchNormalization())
 locnet.add(Activation('relu'))
-#locnet.add(MaxPooling2D(pool_size=(2,2)))
 
+#locnet.add(MaxPooling2D(pool_size=(2,2)))
+#locnet.add(Flatten())
+#locnet.add(Dense(50))
+#locnet.add(Activation('relu'))
+#locnet.add(Dense(2, weights=weights)) # what if only do shift?
 
 #locnet.add(UpSampling2D( (2, 2) ))
 #locnet.add(Conv2D(20, (5,5), padding = 'same')) # Transpose/Deconvolve or not?
 #locnet.add(UpSampling2D( (2, 2)))
-locnet.add(Conv2D(2, (5,5), padding = 'same'))
+locnet.add(Conv2D(2, (5,5), padding = 'same',
+                  kernel_initializer='zeros',
+                  bias_initializer = 'zeros'))
+#locnet.add(Activation('linear'))
+
+b = np.zeros((2, 3), dtype='float32')
+b[0, 0] = 1
+b[1, 1] = 1
+W = np.zeros((50, 6), dtype='float32')
+weights = [W, b.flatten()]
+
+locnet_a = Sequential()
+locnet_a.add(MaxPooling2D(pool_size=(2,2), input_shape=input_shape))
+locnet_a.add(Conv2D(20, (5, 5)))
+locnet_a.add(MaxPooling2D(pool_size=(2,2)))
+locnet_a.add(Conv2D(20, (5, 5)))
+
+locnet_a.add(Flatten())
+locnet_a.add(Dense(50))
+locnet_a.add(Activation('relu'))
+locnet_a.add(Dense(6, weights=weights))
+
 
 
 model = Sequential()
+
+model.add(SpatialTransformer(localization_net=locnet_a,
+                             output_size=(60,60), 
+                             input_shape=input_shape))
 
 model.add(SpatialDeformer(localization_net=locnet,
                              output_size=(30,30),  # this affects the grid size, should be the same as output of above for deformation
@@ -89,7 +126,10 @@ model.add(Activation('relu'))
 model.add(Dense(nb_classes))
 model.add(Activation('softmax'))
 
-model.compile(loss='categorical_crossentropy', optimizer='adam')
+model.compile(loss='categorical_crossentropy',
+              optimizer='adam'
+#              optimizer=SGD(lr=0.005, decay=1e-6, momentum=0.9, nesterov=True)
+              )
 # optimizers.SGD(lr=0.005, decay=1e-6, momentum=0.9, nesterov=True)
 
 XX = model.input
@@ -100,8 +140,8 @@ XX_loc = locnet.input
 DD = locnet.layers[5].output
 DF = K.function([XX_loc], [DD])
 
-nb_epochs = 20 # you probably want to go longer than this
-batch_size = 256
+nb_epochs = 5 # you probably want to go longer than this
+batch_size = 128
 #fig = plt.figure()
 try:
     for e in range(nb_epochs):
@@ -116,8 +156,8 @@ try:
             loss = model.train_on_batch(X_batch, y_batch)
             #print(loss)
             #progbar.add(X_batch.shape[0], values=[("train loss", loss)])
-        scorev = model.evaluate(X_valid, y_valid, verbose=1)
-        scoret = model.evaluate(X_test, y_test, verbose=1)
+        scorev = model.evaluate(X_valid, y_valid, verbose=0)
+        scoret = model.evaluate(X_test, y_test, verbose=0)
         print('Epoch: {0} | Valid: {1} | Test: {2}'.format(e, scorev, scoret))
         
 #        if e % 1 == 0:

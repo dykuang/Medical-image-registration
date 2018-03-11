@@ -142,8 +142,8 @@ class SpatialTransformer(Layer):
         output_height = output_size[0]
         output_width = output_size[1]
         indices_grid = self._meshgrid(output_height, output_width)
-        indices_grid = tf.expand_dims(indices_grid, 0)
-        indices_grid = tf.reshape(indices_grid, [-1]) # flatten?
+#        indices_grid = tf.expand_dims(indices_grid, 0)
+#        indices_grid = tf.reshape(indices_grid, [-1]) # flatten?
 
         indices_grid = tf.tile(indices_grid, tf.stack([batch_size]))
         indices_grid = tf.reshape(indices_grid, (batch_size, 3, -1))

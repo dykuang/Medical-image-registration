@@ -151,18 +151,16 @@ class SpatialDeformer(Layer):
         output_height = output_size[0]
         output_width = output_size[1]
         indices_grid = self._meshgrid(output_height, output_width)
-        indices_grid = tf.expand_dims(indices_grid, 0)
-        indices_grid = tf.reshape(indices_grid, [-1]) # flatten?
+#        indices_grid = tf.expand_dims(indices_grid, 0)
+#        indices_grid = tf.reshape(indices_grid, [-1]) # flatten?
 
         indices_grid = tf.tile(indices_grid, tf.stack([batch_size]))
         indices_grid = tf.reshape(indices_grid, (batch_size, 2, -1))
 
-#        transformed_grid = tf.matmul(affine_transformation, indices_grid)
-        
+#        transformed_grid = tf.matmul(affine_transformation, indices_grid)      
         
 #        deformation = tf.cast(deformation, 'float32')
-#        
-        
+#                
 #        x_s_df = tf.slice(indices_grid, [0, 0, 0], [-1, 1, -1])
 #        y_s_df = tf.slice(indices_grid, [0, 1, 0], [-1, 1, -1])
 #        x_s_df_flatten = tf.reshape(x_s_df, [-1])
@@ -173,10 +171,11 @@ class SpatialDeformer(Layer):
 #                                               y_s__df_flatten,
 #                                               output_size)
         
-        deformation_interp = tf.reshape(deformation, shape = (batch_size, 2, -1) )
+#        deformation = tf.expand_dims(deformation ,2)
+        deformation = tf.reshape(deformation, shape = (batch_size, 2, -1) )
         
-        transformed_grid = deformation_interp + indices_grid # are they of the same shape?
-        x_s = tf.slice(transformed_grid, [0, 0, 0], [-1, 1, -1])
+        transformed_grid = deformation + indices_grid # are they of the same shape?
+        x_s = tf.slice(transformed_grid, [0, 0, 0], [-1, 1, -1]) #problem here?
         y_s = tf.slice(transformed_grid, [0, 1, 0], [-1, 1, -1])
         x_s_flatten = tf.reshape(x_s, [-1])
         y_s_flatten = tf.reshape(y_s, [-1])
