@@ -13,9 +13,9 @@ np.random.seed(1337)  # for reproducibility
 import matplotlib.pyplot as plt
 from scipy.misc import imresize
 from keras.datasets import mnist
-from keras.models import Sequential
+from keras.models import Model
 from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, UpSampling2D, BatchNormalization
+from keras.layers import Input, Conv2D, MaxPooling2D, Conv2DTranspose, UpSampling2D, BatchNormalization
 from keras.utils import np_utils
 from keras.utils import np_utils, generic_utils
 from keras.optimizers import Adam, SGD
@@ -53,21 +53,15 @@ input_shape =  np.squeeze(X_train.shape[1:])
 input_shape = (60,60,1)
 print("Input shape:",input_shape)
 
-#b = np.zeros((2, 1), dtype='float32')
-#b[0, 0] = 0
-#b[1, 0] = 0
-#W = np.zeros((50, 2), dtype='float32')
-#weights = [W, b.flatten()]
 
-
-locnet = Sequential()
-
-locnet.add(Conv2D(20, (5, 5), padding = 'same', input_shape=input_shape))
-locnet.add(Activation('relu'))
-locnet.add(MaxPooling2D(pool_size=(2,2)))
-locnet.add(Conv2D(20, (5, 5), padding = 'same'))
-#locnet.add(BatchNormalization())
-locnet.add(Activation('relu'))
+#locnet = Sequential()
+#
+#locnet.add(Conv2D(20, (5, 5), padding = 'same', input_shape=input_shape))
+#locnet.add(Activation('relu'))
+#locnet.add(MaxPooling2D(pool_size=(2,2)))
+#locnet.add(Conv2D(20, (5, 5), padding = 'same'))
+##locnet.add(BatchNormalization())
+#locnet.add(Activation('relu'))
 
 #locnet.add(MaxPooling2D(pool_size=(2,2)))
 #locnet.add(Flatten())
@@ -78,9 +72,9 @@ locnet.add(Activation('relu'))
 #locnet.add(UpSampling2D( (2, 2) ))
 #locnet.add(Conv2D(20, (5,5), padding = 'same')) # Transpose/Deconvolve or not?
 #locnet.add(UpSampling2D( (2, 2)))
-locnet.add(Conv2D(2, (5,5), padding = 'same',
-                  kernel_initializer='zeros',
-                  bias_initializer = 'zeros'))
+#locnet.add(Conv2D(2, (5,5), padding = 'same',
+#                  kernel_initializer='zeros',
+#                  bias_initializer = 'zeros'))
 #locnet.add(Activation('linear'))
 
 b = np.zeros((2, 3), dtype='float32')
@@ -89,58 +83,107 @@ b[1, 1] = 1
 W = np.zeros((50, 6), dtype='float32')
 weights = [W, b.flatten()]
 
-locnet_a = Sequential()
-locnet_a.add(MaxPooling2D(pool_size=(2,2), input_shape=input_shape))
-locnet_a.add(Conv2D(20, (5, 5)))
-locnet_a.add(MaxPooling2D(pool_size=(2,2)))
-locnet_a.add(Conv2D(20, (5, 5)))
+#locnet_a = Sequential()
+#locnet_a.add(MaxPooling2D(pool_size=(2,2), input_shape=input_shape))
+#locnet_a.add(Conv2D(20, (5, 5)))
+#locnet_a.add(MaxPooling2D(pool_size=(2,2)))
+#locnet_a.add(Conv2D(20, (5, 5)))
+#
+#locnet_a.add(Flatten())
+#locnet_a.add(Dense(50))
+#locnet_a.add(Activation('relu'))
+#locnet_a.add(Dense(6, weights=weights))
 
-locnet_a.add(Flatten())
-locnet_a.add(Dense(50))
-locnet_a.add(Activation('relu'))
-locnet_a.add(Dense(6, weights=weights))
 
 
+#model = Sequential()
+#
+#model.add(SpatialTransformer(localization_net=locnet_a,
+#                             output_size=(60,60), 
+#                             input_shape=input_shape))
+#
+#model.add(SpatialDeformer(localization_net=locnet,
+#                             output_size=(30,30),  # this affects the grid size, should be the same as output of above for deformation
+#                             input_shape=input_shape))
+#
+#model.add(Conv2D(32, (3, 3), padding='same'))
+#model.add(Activation('relu'))
+#model.add(MaxPooling2D(pool_size=(2, 2)))
+#model.add(Conv2D(32, (3, 3)))
+#model.add(Activation('relu'))
+#model.add(MaxPooling2D(pool_size=(2, 2)))
+#
+#model.add(Flatten())
+#model.add(Dense(256))
+#model.add(Activation('relu'))
+#
+#model.add(Dense(nb_classes))
+#model.add(Activation('softmax'))
 
-model = Sequential()
-
-model.add(SpatialTransformer(localization_net=locnet_a,
-                             output_size=(60,60), 
-                             input_shape=input_shape))
-
-model.add(SpatialDeformer(localization_net=locnet,
-                             output_size=(30,30),  # this affects the grid size, should be the same as output of above for deformation
-                             input_shape=input_shape))
-
-model.add(Conv2D(32, (3, 3), padding='same'))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Conv2D(32, (3, 3)))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-
-model.add(Flatten())
-model.add(Dense(256))
-model.add(Activation('relu'))
-
-model.add(Dense(nb_classes))
-model.add(Activation('softmax'))
-
-model.compile(loss='categorical_crossentropy',
-              optimizer='adam'
+#model.compile(loss='categorical_crossentropy',
+#              optimizer='adam'
 #              optimizer=SGD(lr=0.005, decay=1e-6, momentum=0.9, nesterov=True)
-              )
+#              )
 # optimizers.SGD(lr=0.005, decay=1e-6, momentum=0.9, nesterov=True)
 
-XX = model.input
-YY = model.layers[0].output
+inputs = Input(shape = input_shape)
+
+yy = MaxPooling2D((2,2))(inputs)
+yy = Conv2D(20, (5,5))(yy)
+yy = MaxPooling2D((2,2))(yy)
+yy = Conv2D(20, (5,5))(yy)
+yy = Flatten()(yy)
+yy = Dense(50)(yy)
+yy = Dense(6, weights=weights)(yy)
+locnet_a = Model(inputs, yy)
+
+
+zz = Conv2D(20, (5,5), padding = 'same')(inputs)
+zz = MaxPooling2D((2,2))(zz)
+zz = Conv2D(20, (5,5), padding = 'same')(zz)
+#zz = BatchNormalization()(zz)   # causing errors when compiling, need to set scope?
+zz = Conv2D(2, (5,5), padding = 'same',
+                  kernel_initializer='zeros',
+                  bias_initializer = 'zeros',
+                  activation = 'tanh')(zz) #careful about the activation
+locnet = Model(inputs, zz)
+
+x = SpatialTransformer(localization_net=locnet_a,
+                             output_size=(60,60), 
+                             input_shape=input_shape)(inputs)
+
+x = SpatialDeformer(localization_net=locnet,
+                             output_size=(30,30), 
+                             input_shape=input_shape)(x)
+
+x = Conv2D(32, (3, 3), padding='same', activation = 'relu')(x)
+x = MaxPooling2D((2,2))(x)
+x = Conv2D(32, (3, 3), padding='same', activation = 'relu')(x)
+x = MaxPooling2D((2,2))(x)
+x = Flatten()(x)
+x = Dense(256, activation = 'relu')(x)
+x = Dense(nb_classes, activation = 'softmax')(x)
+model = Model(inputs, x)
+
+
+from keras.losses import categorical_crossentropy
+def Reg_loss(y_true, y_pred):
+    cls_loss = categorical_crossentropy(y_true, y_pred)
+    
+    return cls_loss 
+
+model.compile(loss = Reg_loss,
+              optimizer='adam')
+
+XX = inputs
+YY = model.layers[2].output
 F = K.function([XX], [YY])
 
-XX_loc = locnet.input
-DD = locnet.layers[5].output
+XX_loc = inputs
+DD = locnet.output
 DF = K.function([XX_loc], [DD])
 
-nb_epochs = 5 # you probably want to go longer than this
+nb_epochs = 2 # you probably want to go longer than this
 batch_size = 128
 #fig = plt.figure()
 try:
@@ -177,7 +220,7 @@ except KeyboardInterrupt:
 
 Xaug = X_train[:9]
 Xresult = F([Xaug.astype('float32')])
-xdeform = DF([Xaug])
+xdeform = DF([Xaug]) # the deformation on the reference frame, needed to be rescaled.
 
 plt.figure() 
 for i in range(9):

@@ -15,15 +15,15 @@ import matplotlib.pyplot as plt
 from scipy.misc import imresize
 from keras.datasets import mnist
 from keras.models import Sequential
-from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.layers.convolutional import Convolution2D, MaxPooling2D
+#from keras.layers.core import Dense, Dropout, Activation, Flatten
+#from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.utils import np_utils
 from keras.utils import np_utils, generic_utils
 from keras.optimizers import Adam, SGD
 
 import keras.backend as K
 from spatial_transformer_net import SpatialTransformer
-
+#
 batch_size = 128
 nb_classes = 10
 nb_epoch = 12
@@ -59,16 +59,17 @@ b[1, 1] = 1
 W = np.zeros((50, 6), dtype='float32')
 weights = [W, b.flatten()]
 
-locnet = Sequential()
-locnet.add(MaxPooling2D(pool_size=(2,2), input_shape=input_shape))
-locnet.add(Convolution2D(20, (5, 5)))
-locnet.add(MaxPooling2D(pool_size=(2,2)))
-locnet.add(Convolution2D(20, (5, 5))) 
+#locnet = Sequential()
+#locnet.add(MaxPooling2D(pool_size=(2,2), input_shape=input_shape))
+#locnet.add(Convolution2D(20, (5, 5)))
+#locnet.add(MaxPooling2D(pool_size=(2,2)))
+#locnet.add(Convolution2D(20, (5, 5))) 
+#
+#locnet.add(Flatten())
+#locnet.add(Dense(50))
+#locnet.add(Activation('relu'))
+#locnet.add(Dense(6, weights=weights)) # initialization is important!!!
 
-locnet.add(Flatten())
-locnet.add(Dense(50))
-locnet.add(Activation('relu'))
-locnet.add(Dense(6, weights=weights)) # initialization is important!!!
 #locnet.add(Activation('sigmoid'))
 
 #model = Sequential()
@@ -92,10 +93,18 @@ locnet.add(Dense(6, weights=weights)) # initialization is important!!!
 
 #==============================================================================
 from keras.models import Model
-from keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Lambda
-#inputs = Input(shape = input_shape)
+from keras.layers import Input, Dense, Conv2D, MaxPooling2D, Flatten, Lambda
 
 inputs = Input(shape = input_shape)
+
+yy = MaxPooling2D((2,2))(inputs)
+yy = Conv2D(20, (5,5))(yy)
+yy = MaxPooling2D((2,2))(yy)
+yy = Conv2D(20, (5,5))(yy)
+yy = Flatten()(yy)
+yy = Dense(50)(yy)
+yy = Dense(6, weights=weights)(yy)
+locnet = Model(inputs, yy)
 
 x = SpatialTransformer(localization_net=locnet,
                              output_size=(60,60), 
@@ -114,9 +123,9 @@ model = Model(inputs, x)
 from keras.losses import categorical_crossentropy
 def Reg_loss(y_true, y_pred):
     cls_loss = categorical_crossentropy(y_true, y_pred)
-    reg_loss = K.reduce_sum(locnet.output)
+#    reg_loss = K.sum(yy/K.max())
     
-    return cls_loss + reg_loss 
+    return cls_loss
 
 model.compile(loss=Reg_loss, optimizer='adam')
 
@@ -144,16 +153,16 @@ try:
         scoret = model.evaluate(X_test, y_test, verbose=0)
         print('Epoch: {0} | Valid: {1} | Test: {2}'.format(e, scorev, scoret))
         
-        if e % 1 == 0:
-            Xresult = F([X_batch[:9]])
-            plt.clf()
-            for i in range(9):
-                plt.subplot(3, 3, i+1)
-                image = np.squeeze(Xresult[0][i])
-                plt.imshow(image, cmap='gray')
-                plt.axis('off')
-            fig.canvas.draw()
-            plt.show()
+#        if e % 1 == 0:
+#            Xresult = F([X_batch[:9]])
+#            plt.clf()
+#            for i in range(9):
+#                plt.subplot(3, 3, i+1)
+#                image = np.squeeze(Xresult[0][i])
+#                plt.imshow(image, cmap='gray')
+#                plt.axis('off')
+#            fig.canvas.draw()
+#            plt.show()
         
 except KeyboardInterrupt:
     pass
