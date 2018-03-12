@@ -42,6 +42,7 @@ class SpatialTransformer(Layer):
 
     def call(self, X, mask=None):
         affine_transformation = self.locnet.call(X)
+#        Y = tf.expand_dims(X[:,:,:,0], 3)
         output = self._transform(affine_transformation, X, self.output_size)
         return output
 
@@ -130,7 +131,7 @@ class SpatialTransformer(Layer):
         batch_size = tf.shape(input_shape)[0]
         height = tf.shape(input_shape)[1]
         width = tf.shape(input_shape)[2]
-        num_channels = tf.shape(input_shape)[3]
+        num_channels = tf.shape(input_shape)[-1]
 
 #        affine_transformation = tf.reshape(affine_transformation, shape=(batch_size,2,3))
 

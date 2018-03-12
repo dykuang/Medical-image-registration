@@ -52,7 +52,8 @@ class SpatialDeformer(Layer):
 
     def call(self, X, mask=None):
         deformation = self.locnet.call(X)
-        output = self._transform(deformation, X, self.output_size)
+        Y = tf.expand_dims(X[:,:,:,0], 3) # only transform the first channel
+        output = self._transform(deformation, Y, self.output_size) 
         return output
 
     def _repeat(self, x, num_repeats):
@@ -180,7 +181,7 @@ class SpatialDeformer(Layer):
         x_s_flatten = tf.reshape(x_s, [-1])
         y_s_flatten = tf.reshape(y_s, [-1])
 
-        transformed_image = self._interpolate(input_shape,
+        transformed_image = self._interpolate(input_shape, # modify so it only transform the first channel?
                                                 x_s_flatten,
                                                 y_s_flatten,
                                                 output_size)

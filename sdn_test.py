@@ -165,12 +165,43 @@ x = Dense(256, activation = 'relu')(x)
 x = Dense(nb_classes, activation = 'softmax')(x)
 model = Model(inputs, x)
 
-
+# define custom loss-----------------------------------------------------------
+#------------------------------------------------------------------------------
 from keras.losses import categorical_crossentropy
 def Reg_loss(y_true, y_pred):
     cls_loss = categorical_crossentropy(y_true, y_pred)
     
     return cls_loss 
+
+#this contains both X and Y sobel filters in the format (3,3,1,2)
+#size is 3 x 3, it considers 1 input channel and has two output channels: X and Y
+sobelFilter = K.variable([[[[1.,  1.]], [[0.,  2.]],[[-1.,  1.]]],
+                      [[[2.,  0.]], [[0.,  0.]],[[-2.,  0.]]],
+                      [[[1., -1.]], [[0., -2.]],[[-1., -1.]]]])
+
+def expandedSobel(inputTensor):
+
+    #this considers data_format = 'channels_last'
+    inputChannels = K.reshape(K.ones_like(inputTensor[0,0,0,:]),(1,1,-1,1))
+    #if you're using 'channels_first', use inputTensor[0,:,0,0] above
+
+    return sobelFilter * inputChannels
+
+def sobelLoss(yTrue,yPred):
+
+    #get the sobel filter repeated for each input channel
+    filt = expandedSobel(yTrue)
+
+    #calculate the sobel filters for yTrue and yPred
+    #this generates twice the number of input channels 
+    #a X and Y channel for each input channel
+    sobelTrue = K.depthwise_conv2d(yTrue,filt)
+    sobelPred = K.depthwise_conv2d(yPred,filt)
+
+    #now you just apply the mse:
+    return K.mean(K.square(sobelTrue - sobelPred))
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 
 model.compile(loss = Reg_loss,
               optimizer='adam')
