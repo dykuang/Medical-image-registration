@@ -190,7 +190,8 @@ for i in range(9):
     plt.subplot(3, 3, i+1)
     plt.imshow(np.squeeze(Xresult[0][i]), cmap='gray')
     plt.axis('off')
-    
+   
+# displacement on the reference frame    
 plt.figure()    
 for i in range(9):
     plt.subplot(3, 3, i+1)

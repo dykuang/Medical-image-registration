@@ -63,7 +63,7 @@ locnet = Sequential()
 locnet.add(MaxPooling2D(pool_size=(2,2), input_shape=input_shape))
 locnet.add(Convolution2D(20, (5, 5)))
 locnet.add(MaxPooling2D(pool_size=(2,2)))
-locnet.add(Convolution2D(20, (5, 5)))
+locnet.add(Convolution2D(20, (5, 5))) 
 
 locnet.add(Flatten())
 locnet.add(Dense(50))
@@ -71,29 +71,57 @@ locnet.add(Activation('relu'))
 locnet.add(Dense(6, weights=weights)) # initialization is important!!!
 #locnet.add(Activation('sigmoid'))
 
-model = Sequential()
+#model = Sequential()
+#
+#model.add(SpatialTransformer(localization_net=locnet,
+#                             output_size=(60,60), input_shape=input_shape))
+#
+#model.add(Convolution2D(32, (3, 3), padding='same'))
+#model.add(Activation('relu'))
+#model.add(MaxPooling2D(pool_size=(2, 2)))
+#model.add(Convolution2D(32, (3, 3)))
+#model.add(Activation('relu'))
+#model.add(MaxPooling2D(pool_size=(2, 2)))
+#
+#model.add(Flatten())
+#model.add(Dense(256))
+#model.add(Activation('relu'))
+#
+#model.add(Dense(nb_classes))
+#model.add(Activation('softmax'))
 
-model.add(SpatialTransformer(localization_net=locnet,
-                             output_size=(60,60), input_shape=input_shape))
+#==============================================================================
+from keras.models import Model
+from keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Lambda
+#inputs = Input(shape = input_shape)
 
-model.add(Convolution2D(32, (3, 3), padding='same'))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Convolution2D(32, (3, 3)))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+inputs = Input(shape = input_shape)
 
-model.add(Flatten())
-model.add(Dense(256))
-model.add(Activation('relu'))
+x = SpatialTransformer(localization_net=locnet,
+                             output_size=(60,60), 
+                             input_shape=input_shape)(inputs)
 
-model.add(Dense(nb_classes))
-model.add(Activation('softmax'))
+x = Conv2D(32, (3, 3), padding='same', activation = 'relu')(x)
+x = MaxPooling2D((2,2))(x)
+x = Conv2D(32, (3, 3), padding='same', activation = 'relu')(x)
+x = MaxPooling2D((2,2))(x)
+x = Flatten()(x)
+x = Dense(256, activation = 'relu')(x)
+x = Dense(nb_classes, activation = 'softmax')(x)
+model = Model(inputs, x)
+#==============================================================================
 
-model.compile(loss='categorical_crossentropy', optimizer='adam')
+from keras.losses import categorical_crossentropy
+def Reg_loss(y_true, y_pred):
+    cls_loss = categorical_crossentropy(y_true, y_pred)
+    reg_loss = K.reduce_sum(locnet.output)
+    
+    return cls_loss + reg_loss 
+
+model.compile(loss=Reg_loss, optimizer='adam')
 
 XX = model.input
-YY = model.layers[0].output
+YY = model.layers[1].output
 F = K.function([XX], [YY])
 
 nb_epochs = 2 # you probably want to go longer than this
