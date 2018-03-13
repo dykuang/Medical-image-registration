@@ -19,7 +19,7 @@ from keras.layers import Input, Conv2D, MaxPooling2D, Conv2DTranspose, UpSamplin
 from keras.utils import np_utils
 from keras.optimizers import Adam, SGD
 from keras.losses import binary_crossentropy, kullback_leibler_divergence, mean_squared_error, mean_squared_logarithmic_error
-
+from keras.initializers import RandomUniform
 import keras.backend as K
 from spatial_deformer_net import SpatialDeformer
 from spatial_transformer_net import SpatialTransformer
@@ -28,9 +28,10 @@ from spatial_transformer_net import SpatialTransformer
 #------------------------------------------------------------------------------
 # Hyperparamters/Global setting
 #------------------------------------------------------------------------------
-epochs = 20
+epochs = 5
 batch_size = 16
-input_shape = (60,60,2)
+res = 120
+input_shape = (res,res,2)
 
 #------------------------------------------------------------------------------
 # Data Preparation
@@ -43,7 +44,7 @@ import os
 train = []
 for temp in os.listdir(data_path):
      brain = imread(os.path.join(data_path, temp))
-     brain = resize(brain, (60,60), mode='reflect') #smooth before resample?
+     brain = resize(brain, (res,res), mode='reflect') #smooth before resample?
      train.append(brain)
 
 train = np.array(train)
@@ -51,13 +52,13 @@ train = train.astype('float32')
 
 #stack any two templates, forming training set
 from itertools import combinations
-x_train = np.zeros([380,60,60,2])
+x_train = np.zeros([380,res,res,2])
 for i, ind in enumerate(combinations(range(20), 2)):
      x_train[i,:,:,0] = train[ind[0]]
      x_train[i,:,:,1] = train[ind[1]] 
      
-     x_train[i,:,:,0] = train[ind[1]]
-     x_train[i,:,:,1] = train[ind[0]]
+     x_train[i+190,:,:,0] = train[ind[1]]
+     x_train[i+190,:,:,1] = train[ind[0]]
      
 y_train = np.expand_dims(x_train[:,:,:,1],3)
 
@@ -79,7 +80,7 @@ zz = UpSampling2D((2,2))(zz)
 zz = Conv2D(32, (3,3), padding = 'same')(zz)
 
 zz = Conv2D(2, (3,3), padding = 'same',
-                  kernel_initializer='zeros',
+                  kernel_initializer= 'zeros',
                   bias_initializer = 'zeros',
                   activation = 'tanh')(zz) #careful about the activation
 locnet = Model(inputs, zz)
@@ -144,19 +145,20 @@ def sobelLoss(yTrue,yPred):
 """
 def customLoss(yTrue, yPred):
      img_loss = mean_squared_logarithmic_error(yTrue, yPred)
+#     img_loss = K.sum(K.square(yTrue-yPred))
      reg_loss = sobelNorm(zz)
      
-     return img_loss  
+     return img_loss
 #------------------------------------------------------------------------------
 # Training with SDN
 #------------------------------------------------------------------------------
 
 #x = SpatialTransformer(localization_net=affine,
-#                             output_size=(60,60), 
+#                             output_size=(120,120), 
 #                             input_shape=input_shape)(inputs)
      
 x = SpatialDeformer(localization_net=locnet,
-                             output_size=(60,60), 
+                             output_size=(res,res), 
                              input_shape=input_shape)(inputs)
 
 model = Model(inputs, x)
@@ -172,19 +174,23 @@ history = model.fit(x_train, y_train,
 plt.figure()
 plt.plot(history.history['loss'])
 
-sample = x_train[:1]
-deformed_sample = model.predict(sample)
+def see_warp(n):
+    
+    sample = x_train[n-1:n]
+    deformed_sample = model.predict(sample)
+    
+    plt.figure()
+    plt.subplot(1,3,1)
+    plt.imshow(sample[0,:,:,0])
+    plt.title('moving')
+    plt.axis('off')
+    plt.subplot(1,3,2)
+    plt.imshow(deformed_sample[0,:,:,0])
+    plt.title('warped')
+    plt.axis('off')
+    plt.subplot(1,3,3)
+    plt.imshow(sample[0,:,:,1])
+    plt.title('fix')
+    plt.axis('off')
 
-plt.figure()
-plt.subplot(1,3,1)
-plt.imshow(x_train[0,:,:,0])
-plt.title('moving')
-plt.axis('off')
-plt.subplot(1,3,2)
-plt.imshow(deformed_sample[0,:,:,0])
-plt.title('warped')
-plt.axis('off')
-plt.subplot(1,3,3)
-plt.imshow(x_train[0,:,:,1])
-plt.title('fix')
-plt.axis('off')
+see_warp(1)
