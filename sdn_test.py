@@ -148,13 +148,13 @@ zz = Conv2D(2, (5,5), padding = 'same',
                   activation = 'tanh')(zz) #careful about the activation
 locnet = Model(inputs, zz)
 
-x = SpatialTransformer(localization_net=locnet_a,
-                             output_size=(60,60), 
-                             input_shape=input_shape)(inputs)
+#x = SpatialTransformer(localization_net=locnet_a,
+#                             output_size=(60,60), 
+#                             input_shape=input_shape)(inputs)
 
 x = SpatialDeformer(localization_net=locnet,
                              output_size=(30,30), 
-                             input_shape=input_shape)(x)
+                             input_shape=input_shape)(inputs)
 
 x = Conv2D(32, (3, 3), padding='same', activation = 'relu')(x)
 x = MaxPooling2D((2,2))(x)
@@ -207,7 +207,7 @@ model.compile(loss = Reg_loss,
               optimizer='adam')
 
 XX = inputs
-YY = model.layers[2].output
+YY = model.layers[1].output
 F = K.function([XX], [YY])
 
 XX_loc = inputs

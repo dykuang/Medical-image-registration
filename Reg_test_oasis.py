@@ -28,7 +28,7 @@ from spatial_transformer_net import SpatialTransformer
 #------------------------------------------------------------------------------
 # Hyperparamters/Global setting
 #------------------------------------------------------------------------------
-epochs = 5
+epochs = 10
 batch_size = 16
 res = 120
 input_shape = (res,res,2)
@@ -124,7 +124,7 @@ def sobelNorm(y):
      sobel = K.depthwise_conv2d(y, filt)
      return K.mean(K.square(sobel))
 
-def sobelLoss(yTrue,yPred):
+def sobelLoss(yTrue,yPred): # this loss causes "check board" effect
 
     #get the sobel filter repeated for each input channel
     filt = expandedSobel(yTrue)

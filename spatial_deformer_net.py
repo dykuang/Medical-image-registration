@@ -172,10 +172,15 @@ class SpatialDeformer(Layer):
 #                                               y_s__df_flatten,
 #                                               output_size)
         
-#        deformation = tf.expand_dims(deformation ,2)
-        deformation = tf.reshape(deformation, shape = (batch_size, 2, -1) )
+#        deformation = tf.expand_dims(deformation , 2)
+
+        # Interesting.. Whys is this different than a direct reshape?
+        deformation = tf.reshape(deformation, (-1, output_height * output_width, 2))
+        deformation = tf.transpose(deformation, (0, 2, 1))
         
-        transformed_grid = deformation + indices_grid # are they of the same shape?
+#        deformation = tf.reshape(deformation, shape = (batch_size, 2, -1) )
+        
+        transformed_grid = deformation/tf.cast(output_height, 'float32') + indices_grid # are they of the same shape?
         x_s = tf.slice(transformed_grid, [0, 0, 0], [-1, 1, -1]) #problem here?
         y_s = tf.slice(transformed_grid, [0, 1, 0], [-1, 1, -1])
         x_s_flatten = tf.reshape(x_s, [-1])
