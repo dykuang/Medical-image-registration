@@ -28,10 +28,11 @@ from spatial_transformer_net import SpatialTransformer
 #------------------------------------------------------------------------------
 # Hyperparamters/Global setting
 #------------------------------------------------------------------------------
-epochs = 10
+epochs = 25
 batch_size = 16
-res = 120
+res = 60
 input_shape = (res,res,2)
+preprocess_flag = False
 
 #------------------------------------------------------------------------------
 # Data Preparation
@@ -65,6 +66,15 @@ y_train = np.expand_dims(x_train[:,:,:,1],3)
 print('x_train shape: {}'.format(x_train.shape))
 print('y_train shape: {}'.format(y_train.shape))
 print('-'*40) 
+
+if preprocess_flag:
+#     train_mean = np.mean(y_train, axis = 0)   
+#     x_train = x_train - np.tile(train_mean, 2)
+#     y_train = y_train - train_mean
+     
+     train_mean = np.reshape(x_train, (-1, 2)).mean(axis = 0) 
+     x_train = x_train - train_mean
+     y_train = y_train - train_mean[1]
 #------------------------------------------------------------------------------
 # NN to produce displacement field
 #------------------------------------------------------------------------------
@@ -144,11 +154,11 @@ def sobelLoss(yTrue,yPred): # this loss causes "check board" effect
 * weights asigned for the two lossses?
 """
 def customLoss(yTrue, yPred):
-     img_loss = mean_squared_logarithmic_error(yTrue, yPred)
+     img_loss = kullback_leibler_divergence(yTrue, yPred)
 #     img_loss = K.sum(K.square(yTrue-yPred))
      reg_loss = sobelNorm(zz)
      
-     return img_loss
+     return img_loss + sobelLoss(yTrue, yPred) + reg_loss
 #------------------------------------------------------------------------------
 # Training with SDN
 #------------------------------------------------------------------------------
@@ -178,6 +188,12 @@ def see_warp(n):
     
     sample = x_train[n-1:n]
     deformed_sample = model.predict(sample)
+    
+    if preprocess_flag:
+     #    sample = sample + np.tile(train_mean, 2)
+     #    deformed_sample = deformed_sample +  train_mean
+         sample = sample + train_mean
+         deformed_sample = deformed_sample +  train_mean[1]
     
     plt.figure()
     plt.subplot(1,3,1)
