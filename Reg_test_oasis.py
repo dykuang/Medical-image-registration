@@ -28,9 +28,9 @@ from spatial_transformer_net import SpatialTransformer
 #------------------------------------------------------------------------------
 # Hyperparamters/Global setting
 #------------------------------------------------------------------------------
-epochs = 25
+epochs = 80
 batch_size = 16
-res = 60
+res = 100
 input_shape = (res,res,2)
 preprocess_flag = False
 
@@ -173,7 +173,7 @@ x = SpatialDeformer(localization_net=locnet,
 
 model = Model(inputs, x)
 model.compile(loss = customLoss, 
-              optimizer = Adam(),
+              optimizer = Adam(decay=1e-5),
               )
 
 history = model.fit(x_train, y_train, 
