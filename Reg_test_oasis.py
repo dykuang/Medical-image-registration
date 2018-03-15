@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from skimage.transform import resize
 from skimage.io import imread
 from keras.models import Model
-from keras.layers import Input, Conv2D, MaxPooling2D, Conv2DTranspose, UpSampling2D, BatchNormalization, Dense, Flatten, Average
+from keras.layers import Input, Conv2D, MaxPooling2D, Conv2DTranspose, UpSampling2D, BatchNormalization, Dense, Flatten, Average, multiply, concatenate
 from keras.utils import np_utils
 from keras.optimizers import Adam, SGD
 from keras.losses import binary_crossentropy, kullback_leibler_divergence, mean_squared_error, mean_squared_logarithmic_error
@@ -84,17 +84,19 @@ inputs = Input(shape = input_shape)
 
 zz = Conv2D(64, (3,3), padding = 'same')(inputs)
 zz = Conv2D(64, (3,3), padding = 'same')(zz)
-zz = MaxPooling2D((2,2))(zz)
+zzz = MaxPooling2D((2,2))(zz)
 
-zz = Conv2D(128, (3,3), padding = 'same')(zz)
-zz = UpSampling2D((2,2))(zz) 
+zzz = Conv2D(128, (3,3), padding = 'same')(zzz)
+zzz = UpSampling2D((2,2))(zzz) 
 
-zz = Conv2D(64, (3,3), padding = 'same')(zz)
-zz = Conv2D(2, (3,3), padding = 'same',
+zzz = Conv2D(64, (3,3), padding = 'same')(zzz)
+#zzzz = concatenate([zz, zzz])
+zzzz = multiply([zz, zzz])
+zzzz = Conv2D(2, (3,3), padding = 'same',
                   kernel_initializer= 'zeros',
                   bias_initializer = 'zeros',
-                  activation = 'linear')(zz) #careful about the activation, results are usually not very big. So linear is OK
-locnet = Model(inputs, zz)
+                  activation = 'linear')(zzzz) #careful about the activation, results are usually not very big. So linear is OK
+locnet = Model(inputs, zzzz)
 
 
 b = np.zeros((2, 3), dtype='float32')
@@ -132,7 +134,7 @@ def expandedSobel(inputTensor):
 
 def sobelNorm(y):
      filt = expandedSobel(y)
-     sobel = K.depthwise_conv2d(y, filt)
+     sobel = K.depthwise_conv2d(y, filt, padding = 'same')
      
      return K.mean(K.square(sobel))
 
@@ -144,8 +146,8 @@ def sobelLoss(yTrue,yPred): #Consider smooth in front
     #calculate the sobel filters for yTrue and yPred
     #this generates twice the number of input channels 
     #a X and Y channel for each input channel
-    sobelTrue = K.depthwise_conv2d(yTrue,filt)
-    sobelPred = K.depthwise_conv2d(yPred,filt)
+    sobelTrue = K.depthwise_conv2d(yTrue,filt, padding = 'same')
+    sobelPred = K.depthwise_conv2d(yPred,filt, padding = 'same')
 
     #now you just apply the mse:
     return K.mean(K.square(sobelTrue - sobelPred)), sobelTrue
@@ -172,7 +174,7 @@ def customLoss(yTrue, yPred):
      img_loss = kullback_leibler_divergence(K.reshape(yTrue, [-1])/K.sum(yTrue), K.reshape(yPred, [-1])/K.sum(yPred))
      sobel_loss, mask = sobelLoss(yTrue, yPred)
      BCE = binary_crossentropy(yTrue, yPred)
-#     masked_loss = K.mean((mask*K.square(yTrue-yPred)))  #[16,62,62,2] vs. [16,64,64,1]
+     masked_loss = K.mean((K.exp(K.sum(mask, axis = 3))*K.square(yTrue-yPred)))  #[16,62,62,2] vs. [16,64,64,1]
 
      reg_loss = sobelNorm(model.layers[1].locnet.output) # why does this term gives zeros? Do not use it alone...
      
@@ -244,4 +246,4 @@ def see_warp(n):
     plt.title('Y')
     plt.axis('off')
     
-see_warp(1)
+see_warp(0)
