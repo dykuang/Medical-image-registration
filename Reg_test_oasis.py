@@ -15,7 +15,9 @@ import matplotlib.pyplot as plt
 from skimage.transform import resize
 from skimage.io import imread
 from keras.models import Model
-from keras.layers import Input, Conv2D, MaxPooling2D, Conv2DTranspose, UpSampling2D, BatchNormalization, Dense, Flatten, Average, multiply, concatenate
+from keras.layers import Input, Conv2D, MaxPooling2D, Conv2DTranspose, UpSampling2D, \
+                        BatchNormalization, Dense, Flatten, Average, add, multiply, \
+                        concatenate, Lambda
 from keras.utils import np_utils
 from keras.optimizers import Adam, SGD
 from keras.losses import binary_crossentropy, kullback_leibler_divergence, mean_squared_error, mean_squared_logarithmic_error
@@ -28,9 +30,9 @@ from spatial_transformer_net import SpatialTransformer
 #------------------------------------------------------------------------------
 # Hyperparamters/Global setting
 #------------------------------------------------------------------------------
-epochs = 2
+epochs = 40
 batch_size = 8
-res = 100
+res = 64
 input_shape = (res,res,2)
 preprocess_flag = False
 
@@ -76,6 +78,23 @@ if preprocess_flag:
      x_train = x_train - train_mean
      y_train = y_train - train_mean[1]
      
+
+#------------------------------------------------------------------------------
+# Some utility functions
+#------------------------------------------------------------------------------
+#this contains both X and Y sobel filters in the format (3,3,1,2)
+#size is 3 x 3, it considers 1 input channel and has two output channels: X and Y
+sobelFilter = K.variable([[[[1.,  1.]], [[0.,  2.]],[[-1.,  1.]]],
+                      [[[2.,  0.]], [[0.,  0.]],[[-2.,  0.]]],
+                      [[[1., -1.]], [[0., -2.]],[[-1., -1.]]]])
+
+def expandedSobel(inputTensor):
+
+    #this considers data_format = 'channels_last'
+    inputChannels = K.reshape(K.ones_like(inputTensor[0,0,0,:]),(1,1,-1,1))
+    #if you're using 'channels_first', use inputTensor[0,:,0,0] above
+
+    return sobelFilter * inputChannels 
      
 #------------------------------------------------------------------------------
 # NN to produce displacement field
@@ -83,15 +102,24 @@ if preprocess_flag:
 inputs = Input(shape = input_shape)
 
 zz = Conv2D(64, (3,3), padding = 'same')(inputs)
-zz = Conv2D(64, (3,3), padding = 'same')(zz)
-zzz = MaxPooling2D((2,2))(zz)
+zzz = Conv2D(64, (3,3), padding = 'same')(zz)
 
+zzz = MaxPooling2D((2,2))(zzz)
 zzz = Conv2D(128, (3,3), padding = 'same')(zzz)
-zzz = UpSampling2D((2,2))(zzz) 
 
+zzz = UpSampling2D((2,2))(zzz) 
 zzz = Conv2D(64, (3,3), padding = 'same')(zzz)
-#zzzz = concatenate([zz, zzz])
-zzzz = multiply([zz, zzz])
+
+zzzz = multiply([zz, zzz]) # it changes the sign? No because the relu activation
+# a special layer to apply 'mask'
+#==============================================================================
+# def enhance(input_tensor):
+#       target = K.expand_dims(inputs[:,:,:,1],3)
+#       mask = K.sum(K.square(K.depthwise_conv2d(target, expandedSobel(target), padding='same')), axis = 3, keepdims=True)
+#       return mask*input_tensor
+#   
+# zzzz = Lambda(enhance)(zzz)            
+#==============================================================================
 zzzz = Conv2D(2, (3,3), padding = 'same',
                   kernel_initializer= 'zeros',
                   bias_initializer = 'zeros',
@@ -117,20 +145,6 @@ affine = Model(inputs, yy)
 #------------------------------------------------------------------------------
 # Custom Loss
 #------------------------------------------------------------------------------
-
-#this contains both X and Y sobel filters in the format (3,3,1,2)
-#size is 3 x 3, it considers 1 input channel and has two output channels: X and Y
-sobelFilter = K.variable([[[[1.,  1.]], [[0.,  2.]],[[-1.,  1.]]],
-                      [[[2.,  0.]], [[0.,  0.]],[[-2.,  0.]]],
-                      [[[1., -1.]], [[0., -2.]],[[-1., -1.]]]])
-
-def expandedSobel(inputTensor):
-
-    #this considers data_format = 'channels_last'
-    inputChannels = K.reshape(K.ones_like(inputTensor[0,0,0,:]),(1,1,-1,1))
-    #if you're using 'channels_first', use inputTensor[0,:,0,0] above
-
-    return sobelFilter * inputChannels
 
 def sobelNorm(y):
      filt = expandedSobel(y)
