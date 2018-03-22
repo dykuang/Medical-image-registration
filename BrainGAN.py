@@ -24,10 +24,9 @@ from spatial_deformer_net import SpatialDeformer
 #------------------------------------------------------------------------------
 # Hyperparamters/Global setting
 #------------------------------------------------------------------------------
-epochs = 4
-batch_size = 8
 res = 64
-input_shape = (res,res,2)
+input_shape_G = (res, res, 2)
+input_shape_D = (res, res, 1)
 
 #------------------------------------------------------------------------------
 # Data Preparation
@@ -77,17 +76,17 @@ def set_trainability(model, flag = False):
 
 # provide batch concatenating true and fake images
 # May need to write a generator and use fit_generator
-def TF_blend(G, batchsize = batch_size):
+def TF_blend(G, batch_size):
     num = int(batch_size/2)
     choice = np.random.choice(380, num, replace = False) # repeated sampels when train?
-    XT = Ants[choice]     
-    XF = G.predict(x_train[choice])
-    blend = np.concatenate((XT, XF))
+    XT = Ants[choice,:]     
+    XF = G.predict(x_train[choice,:])
+    blend = np.concatenate((XT, XF),axis = 0)
     
-    label = np.zeros((batchsize, 2))
-    
+    label = np.zeros((batch_size, 2))
     label[:num, 1] = 1
     label[num:, 0] = 1
+    
     return blend, label
     
 
@@ -98,8 +97,7 @@ def TF_blend(G, batchsize = batch_size):
 #    
 #    return samples
 
-
-def sample_train(batchsize = batch_size):
+def sample_train(batchsize):
     choice = np.random.choice(380, batchsize, replace = False)
     samples = x_train[choice]
     label = np.zeros((batchsize, 2))
@@ -109,7 +107,6 @@ def sample_train(batchsize = batch_size):
 #------------------------------------------------------------------------------
 # Build the Generator
 #------------------------------------------------------------------------------
-inputs = Input(shape = input_shape)
 
 def Generator(inputs):  
     zz = Conv2D(64, (3,3), padding = 'same')(inputs)
@@ -130,12 +127,12 @@ def Generator(inputs):
     locnet = Model(inputs, zzzz)
      
     x1 = SpatialDeformer(localization_net=locnet,
-                             output_size=(input_shape[0],input_shape[1]), 
-                             input_shape=input_shape)(inputs)
+                             output_size=(input_shape_G[0],input_shape_G[1]), 
+                             input_shape=input_shape_G)(inputs)
 
     return x1
 
-GEN_input = Input(shape = input_shape)
+GEN_input = Input(shape = input_shape_G)
 GEN_out = Generator(GEN_input)
 GEN = Model(GEN_input, GEN_out)
 
@@ -154,14 +151,14 @@ def Discriminator(inputs):
 
     return x
 
-DCN_input = Input(shape = input_shape)
+DCN_input = Input(shape = input_shape_D)
 DCN_out = Discriminator(DCN_input)
 DCN = Model(DCN_input, DCN_out)
 
 #------------------------------------------------------------------------------
 # Build the GAN
 #------------------------------------------------------------------------------
-GAN_input = Input(shape = input_shape) 
+GAN_input = Input(shape = input_shape_G) 
 GEN_out_GAN = Generator(GAN_input)
 DCN_out = Discriminator(GEN_out_GAN)
 GAN = Model(GAN_input, DCN_out)
@@ -173,9 +170,13 @@ from BrainSDN import customLoss
 GEN.compile(loss = customLoss, 
             optimizer = Adam(),
               )
+
+print("Pretrain the Generator:")
+print('-'*40)
+
 GEN.fit(x_train, y_train, 
-        epochs=1, batch_size=batch_size,
-        verbose = 0,
+        epochs=1, batch_size= 32,
+        verbose = 1,
         shuffle = True)
 
 
@@ -183,27 +184,31 @@ X, Y = TF_blend(GEN, 380*2)
 DCN.compile(loss = 'binary_crossentropy',
             optimizer = Adam()
             )
+
+print("Pretrain the Discriminator:")
+print('-'*40)
 DCN.fit(X, Y, 
         epochs = 2,
-        batch_size = 16)
+        batch_size = 32)
 
 #------------------------------------------------------------------------------
 # Train
 #------------------------------------------------------------------------------
-def train(GAN, G, D, epochs = epochs, 
-          batch_size = batch_size, 
+def train(GAN, G, D, epochs, 
+          batch_size, 
           verbose = True, show_freq = 50):
     d_loss = []
     g_loss = []
     e_range = range(epochs)
     
     for epoch in e_range:
-        # train the discriminator
+        # train the discriminator, can train multiple times before passing to the next stage
         set_trainability(D, True)
         set_trainability(G, False)
         X_D, Y_D = TF_blend(GEN, 128)
         d_loss.append(D.train_on_batch(X_D, Y_D))
         
+        # train the generator
         set_trainability(D, False)
         set_trainability(G, True)
         X_GAN, Y_GAN = sample_train(64)
