@@ -30,7 +30,7 @@ from spatial_transformer_net import SpatialTransformer
 #------------------------------------------------------------------------------
 # Hyperparamters/Global setting
 #------------------------------------------------------------------------------
-epochs = 40
+epochs = 4
 batch_size = 8
 res = 64
 input_shape = (res,res,2)
@@ -84,7 +84,7 @@ if preprocess_flag:
 #------------------------------------------------------------------------------
 #this contains both X and Y sobel filters in the format (3,3,1,2)
 #size is 3 x 3, it considers 1 input channel and has two output channels: X and Y
-sobelFilter = K.variable([[[[1.,  1.]], [[0.,  2.]],[[-1.,  1.]]],
+sobelFilter = K.constant([[[[1.,  1.]], [[0.,  2.]],[[-1.,  1.]]],
                       [[[2.,  0.]], [[0.,  0.]],[[-2.,  0.]]],
                       [[[1., -1.]], [[0., -2.]],[[-1., -1.]]]])
 
