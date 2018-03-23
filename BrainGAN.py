@@ -70,7 +70,8 @@ Ants = np.expand_dims(Ants, 3)
 #------------------------------------------------------------------------------
 # Some util functions
 #------------------------------------------------------------------------------
-def set_trainability(model, flag = False):
+def set_trainability(model, flag = False): # need to call compile() after this?
+    model.trainable = flag
     for layer in model.layers:
         layer.trainable = flag
 
@@ -136,18 +137,20 @@ GEN_input = Input(shape = input_shape_G)
 GEN_out = Generator(GEN_input)
 GEN = Model(GEN_input, GEN_out)
 
+print("Summary of Generator:")
+GEN.summary()
 
 #------------------------------------------------------------------------------
 # Build the Discriminator
 #------------------------------------------------------------------------------
 def Discriminator(inputs):
 #    inputs = Input(shape = input_shape)
-    x = Conv2D(32, (3,3), padding = 'same')(inputs)
-    x = Conv2D(64, (3,3), padding = 'same')(x)
+    x = Conv2D(32, (3,3), padding = 'valid')(inputs)
+    x = Conv2D(64, (3,3), padding = 'valid')(x)
     x = MaxPooling2D((2,2))(x)
     x = Flatten()(x)
-    x = Dense(64, activation = 'relu')(x)
-    x = Dense(2, activation = 'softmax')(x)
+    x = Dense(16, activation = 'relu')(x)  # use global average pooling to reduce size?
+    x = Dense(2, activation = 'softmax')(x) # the loss must match up with this.
 
     return x
 
@@ -155,64 +158,75 @@ DCN_input = Input(shape = input_shape_D)
 DCN_out = Discriminator(DCN_input)
 DCN = Model(DCN_input, DCN_out)
 
-#------------------------------------------------------------------------------
-# Build the GAN
-#------------------------------------------------------------------------------
-GAN_input = Input(shape = input_shape_G) 
-GEN_out_GAN = Generator(GAN_input)
-DCN_out = Discriminator(GEN_out_GAN)
-GAN = Model(GAN_input, DCN_out)
+print("Summary of Discriminator:")
+DCN.summary()
 
 #------------------------------------------------------------------------------
 # Pretrain each
 #------------------------------------------------------------------------------
-from BrainSDN import customLoss
-GEN.compile(loss = customLoss, 
-            optimizer = Adam(),
-              )
-
-print("Pretrain the Generator:")
-print('-'*40)
-
-GEN.fit(x_train, y_train, 
-        epochs=1, batch_size= 32,
-        verbose = 1,
-        shuffle = True)
+#from BrainSDN import customLoss
+#GEN.compile(loss = customLoss, 
+#            optimizer = Adam(),
+#              )
+#
+#print("Pretrain the Generator:")
+#print('-'*40)
+#
+#GEN.fit(x_train, y_train, 
+#        epochs=1, batch_size= 32,
+#        verbose = 1,
+#        shuffle = True)
 
 
 X, Y = TF_blend(GEN, 380*2)
-DCN.compile(loss = 'binary_crossentropy',
-            optimizer = Adam()
-            )
-
 print("Pretrain the Discriminator:")
 print('-'*40)
+DCN.compile(loss = 'categorical_crossentropy',
+            optimizer = Adam(),
+            metrics=['accuracy']
+            )
 DCN.fit(X, Y, 
         epochs = 2,
         batch_size = 32)
 
 #------------------------------------------------------------------------------
+# Build the GAN (It may be good to have a node editor..)
+#------------------------------------------------------------------------------
+set_trainability(DCN, False)
+GAN_out = DCN(GEN_out)
+GAN = Model(GEN_input, GAN_out)
+GAN.compile(loss = 'categorical_crossentropy',
+            optimizer = Adam(),
+            metrics=['accuracy']
+            )
+print("Summary of GAN:")
+GAN.summary()
+
+#------------------------------------------------------------------------------
 # Train
 #------------------------------------------------------------------------------
-def train(GAN, G, D, epochs, 
+
+# add an argument for balancing G and D during Training?
+def train(Gan, G, D, epochs, 
           batch_size, 
           verbose = True, show_freq = 50):
     d_loss = []
     g_loss = []
     e_range = range(epochs)
     
+    iter_num = int(np.floor(380/batch_size))
+    iter_range = range(iter_num)
     for epoch in e_range:
-        # train the discriminator, can train multiple times before passing to the next stage
-        set_trainability(D, True)
-        set_trainability(G, False)
-        X_D, Y_D = TF_blend(GEN, 128)
-        d_loss.append(D.train_on_batch(X_D, Y_D))
-        
-        # train the generator
-        set_trainability(D, False)
-        set_trainability(G, True)
-        X_GAN, Y_GAN = sample_train(64)
-        g_loss.append(GAN.train_on_batch(X_GAN, Y_GAN))
+        for _ in iter_range:
+            # train the discriminator, can train multiple times before passing to the next stage
+            set_trainability(D, True)
+            X_D, Y_D = TF_blend(GEN, batch_size)
+            d_loss.append(D.train_on_batch(X_D, Y_D))
+         
+        for _ in iter_range:
+            # train the generator
+            X_GAN, Y_GAN = sample_train(batch_size)
+            g_loss.append(Gan.train_on_batch(X_GAN, Y_GAN))
     
         if verbose and (epoch + 1) % show_freq == 0:
             print("Epoch #{}: Generative Loss: {}, Discriminative Loss: {}".format(
@@ -220,6 +234,12 @@ def train(GAN, G, D, epochs,
     return d_loss, g_loss    
     
 
+dloss, gloss= train(GAN, GEN, DCN, 2, 64)
 
-
-
+"""
+TODO: Tune to Converge !!!
+      Add some visualization
+"""
+plt.plot(dloss)
+plt.figure()
+plt.plot(gloss)
