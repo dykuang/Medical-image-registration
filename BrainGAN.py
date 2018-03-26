@@ -117,6 +117,17 @@ def vis(G, choice = sample_choice):
             plt.subplot(3, 3, 3*i+j+1)
             plt.imshow(sample[3*i+j,:,:,0])
             plt.axis('off')
+
+def vis_target(choice = sample_choice):
+    sample = y_train[choice]
+    plt.figure()
+    for i in range(3):
+        for j in range(3):
+            plt.subplot(3, 3, 3*i+j+1)
+            plt.imshow(sample[3*i+j,:,:,0])
+            plt.axis('off')
+    plt.suptitle('target images')
+            
 #------------------------------------------------------------------------------
 # Build the Generator
 #------------------------------------------------------------------------------
@@ -176,19 +187,19 @@ DCN.summary()
 #------------------------------------------------------------------------------
 # Pretrain each
 #------------------------------------------------------------------------------
-#from BrainSDN import customLoss
-#GEN.compile(loss = customLoss, 
-#            optimizer = Adam(),
-#              )
-#
-#print('-'*40)
-#print("Pretrain the Generator:")
-#print('-'*40)
-#
-#GEN.fit(x_train, y_train, 
-#        epochs=1, batch_size= 32,
-#        verbose = 1,
-#        shuffle = True)
+from BrainSDN import customLoss
+GEN.compile(loss = customLoss, 
+            optimizer = Adam(),
+              )
+
+print('-'*40)
+print("Pretrain the Generator:")
+print('-'*40)
+
+GEN.fit(x_train, y_train, 
+        epochs=2, batch_size= 32,
+        verbose = 1,
+        shuffle = True)
 
 vis(GEN)
 plt.suptitle('GEN sample after pretrained.')
@@ -201,8 +212,9 @@ DCN.compile(loss = 'categorical_crossentropy',
             optimizer = Adam(),
             metrics=['accuracy']
             )
+print(DCN.trainable)
 DCN.fit(X, Y, 
-        epochs = 2,
+        epochs = 4,
         batch_size = 32)
 
 #------------------------------------------------------------------------------
@@ -256,10 +268,10 @@ def train(Gan, G, D, epochs,
     
 
 dloss, gloss= train(GAN, GEN, DCN, 
-                    epochs=5, 
-                    batch_size = 128, 
-                    D_nt=1,
-                    G_nt = 4)
+                    epochs=2, 
+                    batch_size = 32, 
+                    D_nt=2,
+                    G_nt = 1)
 
 """
 TODO: Tune to Converge !!!
@@ -276,3 +288,4 @@ def vis_loss(dloss, gloss):
 
 vis(GEN)
 plt.suptitle('GEN samples after trained.')
+vis_target()
