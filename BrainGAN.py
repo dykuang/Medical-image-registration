@@ -105,6 +105,18 @@ def sample_train(batchsize):
     
     label[:, 1] = 1
     return samples, label
+
+
+sample_choice = np.random.choice(380, 9, replace = False)
+def vis(G, choice = sample_choice):
+    plt.figure()
+    
+    sample = G.predict(x_train[choice])
+    for i in range(3):
+        for j in range(3):
+            plt.subplot(3, 3, 3*i+j+1)
+            plt.imshow(sample[3*i+j,:,:,0])
+            plt.axis('off')
 #------------------------------------------------------------------------------
 # Build the Generator
 #------------------------------------------------------------------------------
@@ -169,6 +181,7 @@ DCN.summary()
 #            optimizer = Adam(),
 #              )
 #
+#print('-'*40)
 #print("Pretrain the Generator:")
 #print('-'*40)
 #
@@ -177,8 +190,11 @@ DCN.summary()
 #        verbose = 1,
 #        shuffle = True)
 
+vis(GEN)
+plt.suptitle('GEN sample after pretrained.')
 
 X, Y = TF_blend(GEN, 380*2)
+print('-'*40)
 print("Pretrain the Discriminator:")
 print('-'*40)
 DCN.compile(loss = 'categorical_crossentropy',
@@ -208,38 +224,55 @@ GAN.summary()
 
 # add an argument for balancing G and D during Training?
 def train(Gan, G, D, epochs, 
-          batch_size, 
-          verbose = True, show_freq = 50):
-    d_loss = []
-    g_loss = []
+          batch_size, D_nt, G_nt,
+          verbose = True, 
+          show_freq = 50,
+          d_loss=[],
+          g_loss=[]):
     e_range = range(epochs)
-    
-    iter_num = int(np.floor(380/batch_size))
-    iter_range = range(iter_num)
+    G_num = range(G_nt)
+    D_num = range(D_nt)
+#    iter_num = int(np.floor(380/batch_size))
+#    iter_range = range(iter_num)
     for epoch in e_range:
-        for _ in iter_range:
+#        for _ in iter_range:
             # train the discriminator, can train multiple times before passing to the next stage
-            set_trainability(D, True)
-            X_D, Y_D = TF_blend(GEN, batch_size)
+        set_trainability(D, True)
+        for _ in D_num:
+            X_D, Y_D = TF_blend(G, batch_size)
             d_loss.append(D.train_on_batch(X_D, Y_D))
          
-        for _ in iter_range:
+#        for _ in iter_range:
+        set_trainability(D, False)
+        for _ in G_num:
             # train the generator
             X_GAN, Y_GAN = sample_train(batch_size)
             g_loss.append(Gan.train_on_batch(X_GAN, Y_GAN))
-    
+        
         if verbose and (epoch + 1) % show_freq == 0:
-            print("Epoch #{}: Generative Loss: {}, Discriminative Loss: {}".format(
-                  epoch + 1, g_loss[-1], d_loss[-1]))
+                print("Epoch #{}: Generative Loss: {}, Discriminative Loss: {}".format(
+                      epoch + 1, g_loss[-1], d_loss[-1]))
     return d_loss, g_loss    
     
 
-dloss, gloss= train(GAN, GEN, DCN, 2, 64)
+dloss, gloss= train(GAN, GEN, DCN, 
+                    epochs=5, 
+                    batch_size = 128, 
+                    D_nt=1,
+                    G_nt = 4)
 
 """
 TODO: Tune to Converge !!!
-      Add some visualization
 """
-plt.plot(dloss)
-plt.figure()
-plt.plot(gloss)
+def vis_loss(dloss, gloss):
+    plt.figure()
+    plt.plot(dloss)
+    plt.legend(['Loss', 'Accuracy'])
+    plt.title('Discriminator')
+    plt.figure()
+    plt.plot(gloss)
+    plt.legend(['Loss', 'Accuracy'])
+    plt.title('GAN')
+
+vis(GEN)
+plt.suptitle('GEN samples after trained.')
