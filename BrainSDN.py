@@ -124,6 +124,7 @@ def sobelLoss(yTrue,yPred): #Consider smooth in front
 
     #now you just apply the mse:
     return K.mean(K.square(sobelTrue - sobelPred)), sobelTrue
+#    return K.meansobelTrue*sobelPred/K.
 
 def total_variation(y):
     assert K.ndim(y) == 4
@@ -154,9 +155,9 @@ if __name__ == '__main__':
     #------------------------------------------------------------------------------
     # Hyperparamters/Global setting
     #------------------------------------------------------------------------------
-    epochs = 4
+    epochs = 12
     batch_size = 8
-    res = 64
+    res = 128
     input_shape = (res,res,2)
     preprocess_flag = False
     

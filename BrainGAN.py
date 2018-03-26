@@ -270,8 +270,8 @@ def train(Gan, G, D, epochs,
 dloss, gloss= train(GAN, GEN, DCN, 
                     epochs=2, 
                     batch_size = 32, 
-                    D_nt=2,
-                    G_nt = 1)
+                    D_nt=1,
+                    G_nt = 2)
 
 """
 TODO: Tune to Converge !!!
