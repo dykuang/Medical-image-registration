@@ -141,13 +141,13 @@ from keras.applications.vgg16 import preprocess_input
 VGG_mean = np.array([123.68, 116.779, 103.939]).reshape((1,1,1,3))
 def preprocess(x):
     xxx = K.concatenate([x,x,x])
-    xxx = xxx*255 - VGG_mean
+    xxx = xxx - VGG_mean/255
     return xxx
 
 XtoVGG = Lambda(preprocess)(SDN_out)
 #XtoVGG = concatenate([SDN_out*255-123.68, SDN_out*255-116.779, SDN_out*255-103.939])     
 
-weights = [1,1,1,1,1]
+weights = [1,1,0,0,0]
 selected_layers = ['block1_conv2', 'block2_conv2', 
                    'block3_conv3', 'block4_conv3',
                    'block5_conv3']
@@ -155,32 +155,49 @@ selected_layers = ['block1_conv2', 'block2_conv2',
 base_model = VGG16(weights='imagenet', include_top=False)
 set_trainability(base_model, False)
 
-selected_output = [base_model.get_layer(selected_layers[i]).output
-                   for i in range(5)]
+selected_output = [base_model.get_layer(L).output
+                   for L in selected_layers]
 loss_model = Model(base_model.input, selected_output)
 set_trainability(base_model, False)
 
 x_output = loss_model(XtoVGG)
 whole_model = Model(SDN_in, x_output)
 
-Y_train = np.concatenate([y_train*255-123.68, y_train*255-116.779, y_train*255-103.939], axis = -1)
-#Y_loss = loss_model.predict(Y_train)
+Y_train = np.concatenate([y_train-123.68/255, y_train-116.779/255, y_train-103.939/255], axis = -1)
+Y_loss = loss_model.predict(Y_train[:1])
 
-def loss_perceptual(y_True, y_Pred):
-    loss = 0
-    for j in range(5):
-        loss += weights[j]*K.mean(mean_squared_error(y_True[j], y_Pred[j]))
-        
-    return loss
+# custom loss function will apply to EACH output, NOT the whole output
+#def loss_perceptual(y_True, y_Pred):
+#    loss = 0
+#    for i in range(5):
+#        loss+=weights[i]*K.mean(K.pow(y_True[2]-y_Pred[2],2))
+#        
+#    return loss
 
-whole_model.compile(loss = 'mse',
-                    optimizer=SGD())
+whole_model.compile(loss = 'mse', 
+#                    loss_weights= weights,
+#                    loss_weights={'model_3': 1.0, 
+#                                  'model_3': 1.0, 
+#                                  'model_3': 1.0,
+#                                  'model_3': 0.0,
+#                                  'model_3': 0.0},
+                    optimizer='adam')
 
+# pretrain with sdn itself?
+#from BrainSDN import customLoss
+#sdn.compile(loss = customLoss, 
+#              optimizer = Adam(decay=1e-5),
+#              )   
+#sdn.fit(x_train[:3], y_train[:3], epochs=epochs)
 
-whole_model.fit(x_train[:3], loss_model.predict(Y_train[:3]))
+whole_model.fit(x_train[:1], Y_loss, epochs=50)
 
- 
-
+aa = sdn.predict(x_train[:1])
+plt.figure()
+plt.subplot(1,2,1)
+plt.imshow(aa[0,:,:,0], cmap='gray') 
+plt.subplot(1,2,2)
+plt.imshow(x_train[0,:,:,1], cmap='gray')
 
 
 
