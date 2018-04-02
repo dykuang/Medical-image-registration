@@ -147,10 +147,11 @@ def preprocess(x):
 XtoVGG = Lambda(preprocess)(SDN_out)
 #XtoVGG = concatenate([SDN_out*255-123.68, SDN_out*255-116.779, SDN_out*255-103.939])     
 
-weights = [1,1,0,0,0]
-selected_layers = ['block1_conv2', 'block2_conv2', 
-                   'block3_conv3', 'block4_conv3',
-                   'block5_conv3']
+weights = [0,0,1,0,0]
+#selected_layers = ['block1_conv2', 'block2_conv2', 
+#                   'block3_conv3', 'block4_conv3',
+#                   'block5_conv3']
+selected_layers = ['block4_conv3']
 
 base_model = VGG16(weights='imagenet', include_top=False)
 set_trainability(base_model, False)
@@ -174,7 +175,24 @@ Y_loss = loss_model.predict(Y_train[:1])
 #        
 #    return loss
 
-whole_model.compile(loss = 'mse', 
+from keras.layers import dot
+def corr(y_True, y_Pred):
+    h = K.shape(y_True)[1]
+    w = K.shape(y_True)[2]
+    d = K.shape(y_True)[3]
+    
+    y_True = K.reshape(y_True, (-1, h*w, d))
+    y_Pred = K.reshape(y_Pred, (-1, h*w, d))
+    
+    cc = dot([y_Pred, y_Pred], 2, True) # use batch_dot? permuation first? same.
+    
+#    cc = K.relu(cc)
+
+    ccT = dot([y_True, y_True], 2, True) # how to initialize eye properly?
+    
+    return K.mean(K.pow(cc-ccT , 2))
+
+whole_model.compile(loss = corr, 
 #                    loss_weights= weights,
 #                    loss_weights={'model_3': 1.0, 
 #                                  'model_3': 1.0, 
