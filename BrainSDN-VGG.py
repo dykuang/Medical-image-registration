@@ -5,7 +5,7 @@ Created on Sat Mar 31 15:50:43 2018
 
 @author: dykuang
 
-Using a VGG-19 perceptual loss for directing the spatial deformer
+Using a VGG-16 perceptual loss for directing the spatial deformer
 """
 
 import numpy as np
@@ -192,7 +192,7 @@ def corr(y_True, y_Pred):
     
     return K.mean(K.pow(cc-ccT , 2))
 
-whole_model.compile(loss = corr, 
+whole_model.compile(loss = 'mse', 
 #                    loss_weights= weights,
 #                    loss_weights={'model_3': 1.0, 
 #                                  'model_3': 1.0, 

@@ -155,7 +155,7 @@ if __name__ == '__main__':
     #------------------------------------------------------------------------------
     # Hyperparamters/Global setting
     #------------------------------------------------------------------------------
-    epochs = 25
+    epochs = 50
     batch_size = 8
     res = 200
     input_shape = (res,res,2)
@@ -197,7 +197,7 @@ if __name__ == '__main__':
               optimizer = Adam(decay=1e-5),
               )
     
-    history = model.fit(x_train[:3], y_train[:3], 
+    history = model.fit(x_train[:1], y_train[:1], 
                     epochs=epochs, batch_size=batch_size,
                     verbose = 0,
                     shuffle = True)
