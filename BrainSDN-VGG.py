@@ -79,6 +79,14 @@ def vis_target(choice = sample_choice):
     plt.suptitle('target images')
 
 
+cat1 = imread('cat1.jpg', as_grey = True)
+cat2 = imread('cat2.jpg', as_grey = True)
+cat1 = resize(cat1, (res,res), mode='reflect')
+cat2 = resize(cat2, (res,res), mode='reflect')
+x_train[0,:,:,0] = cat1
+x_train[0,:,:,1] = cat2
+
+y_train[0,:,:,0] = cat2 
 #------------------------------------------------------------------------------
 # Some util functions
 #------------------------------------------------------------------------------
@@ -91,6 +99,7 @@ def set_trainability(model, flag = False): # need to call compile() after this?
 #------------------------------------------------------------------------------
 # SDN part
 #------------------------------------------------------------------------------
+from spatial_transformer_net import SpatialTransformer
 def SDN(inputs):
     
     zz = Conv2D(64, (3,3), padding = 'same')(inputs)
@@ -110,7 +119,10 @@ def SDN(inputs):
     
     locnet = Model(inputs, zzzz)
      
-    x1 = SpatialDeformer(localization_net=locnet,
+#    x1 = SpatialDeformer(localization_net=locnet,
+#                             output_size=(input_shape_G[0],input_shape_G[1]), 
+#                             input_shape=input_shape_G)(inputs)
+    x1 = SpatialTransformer(localization_net=locnet,
                              output_size=(input_shape_G[0],input_shape_G[1]), 
                              input_shape=input_shape_G)(inputs)
     
@@ -126,21 +138,16 @@ sdn = Model(SDN_in, SDN_out)
 # VGG part
 #------------------------------------------------------------------------------
 
-"""
-TODO: 
-    preprocess?
-    define a loss function on top !! something like content/style loss?
-"""
-
 
 from keras.applications.vgg16 import VGG16
-from keras.preprocessing import image
-from keras.applications.vgg16 import preprocess_input
+#from keras.preprocessing import image
+#from keras.applications.vgg16 import preprocess_input
 
 # a connection part from SDN to VGG
 VGG_mean = np.array([123.68, 116.779, 103.939]).reshape((1,1,1,3))
 def preprocess(x):
-    xxx = K.concatenate([x,x,x])
+    xxx = Lambda(lambda x: x[:,:,:,:1])(x)
+#    xxx = K.concatenate([x,x,x])
     xxx = xxx - VGG_mean/255
     return xxx
 
@@ -208,7 +215,7 @@ whole_model.compile(loss = corr,
 #              )   
 #sdn.fit(x_train[:3], y_train[:3], epochs=epochs)
 
-whole_model.fit(x_train[:1], Y_loss, epochs=50)
+whole_model.fit(x_train[:1], Y_loss, epochs=7)
 
 aa = sdn.predict(x_train[:1])
 plt.figure()
