@@ -30,13 +30,19 @@ sobelFilter = K.constant([[[[1.,  1.]], [[0.,  2.]],[[-1.,  1.]]],
                       [[[2.,  0.]], [[0.,  0.]],[[-2.,  0.]]],
                       [[[1., -1.]], [[0., -2.]],[[-1., -1.]]]])
 
+scharrFilter = K.constant([[[[3.,  3.]], [[0.,  10.]],[[-3.,  3.]]],
+                      [[[10.,  0.]], [[0.,  0.]],[[-10.,  0.]]],
+                      [[[3., -3.]], [[0., -10.]],[[-3., -3.]]]])
+
+Filter = sobelFilter
+
 def expandedSobel(inputTensor):
 
     #this considers data_format = 'channels_last'
     inputChannels = K.reshape(K.ones_like(inputTensor[0,0,0,:]),(1,1,-1,1))
     #if you're using 'channels_first', use inputTensor[0,:,0,0] above
 
-    return sobelFilter * inputChannels 
+    return Filter * inputChannels 
 
 def see_warp(n):
     
@@ -130,14 +136,13 @@ def total_variation(y):
     assert K.ndim(y) == 4
     a = K.square(y[:, :res - 1, :res - 1, :] - y[:, 1:, :res - 1, :])
     b = K.square(y[:, :res - 1, :res - 1, :] - y[:, :res - 1, 1:, :])
-    return K.mean(K.pow(a + b, 2))
+    return K.mean(K.pow(a + b, 2)) # tweak the power?
 
 def total_variation_loss(yTrue, yPred):
     assert K.ndim(yTrue) == 4
     diff = yTrue - yPred
-    a = K.square(diff[:, :res - 1, :res - 1, :] - diff[:, 1:, :res - 1, :])
-    b = K.square(diff[:, :res - 1, :res - 1, :] - diff[:, :res - 1, 1:, :])
-    return K.mean(K.pow(a + b, 2)) # tweak the power?
+
+    return total_variation(diff) 
 
 """
 * Add gradient loss in img_loss? may help emphasizing edges
@@ -157,7 +162,7 @@ if __name__ == '__main__':
     #------------------------------------------------------------------------------
     epochs = 50
     batch_size = 8
-    res = 200
+    res = 224
     input_shape = (res,res,2)
     preprocess_flag = False
     
@@ -196,6 +201,17 @@ if __name__ == '__main__':
     model.compile(loss = customLoss, 
               optimizer = Adam(decay=1e-5),
               )
+#    
+# =============================================================================
+#     cat1 = imread('cat4.jpg', as_grey = True)
+#     cat2 = imread('cat5.jpg', as_grey = True)
+#     cat1 = resize(cat1, (res,res), mode='reflect')
+#     cat2 = resize(cat2, (res,res), mode='reflect')
+#     x_train[0,:,:,0] = cat1
+#     x_train[0,:,:,1] = cat2
+#      
+#     y_train[0,:,:,0] = cat2
+# =============================================================================
     
     history = model.fit(x_train[:1], y_train[:1], 
                     epochs=epochs, batch_size=batch_size,

@@ -21,6 +21,10 @@ import keras.backend as K
 from spatial_deformer_net import SpatialDeformer
 from keras.losses import mean_squared_error
 
+
+#from skimage import transform as tsf
+#tform = tsf.SimilarityTransform(scale=1.0, rotation=0, translation=(5, 5))
+
 #------------------------------------------------------------------------------
 # Hyperparamters/Global setting
 #------------------------------------------------------------------------------
@@ -79,14 +83,16 @@ def vis_target(choice = sample_choice):
     plt.suptitle('target images')
 
 
-#cat1 = imread('cat1.jpg', as_grey = True)
-#cat2 = imread('cat2.jpg', as_grey = True)
+#cat1 = imread('cat4.jpg', as_grey = True)
+#cat2 = imread('cat5.jpg', as_grey = True)
 #cat1 = resize(cat1, (res,res), mode='reflect')
 #cat2 = resize(cat2, (res,res), mode='reflect')
 #x_train[0,:,:,0] = cat1
 #x_train[0,:,:,1] = cat2
 #
 #y_train[0,:,:,0] = cat2 
+    
+#x_train[0,:,:,0] = tsf.warp(x_train[0,:,:,0], tform)
 #------------------------------------------------------------------------------
 # Some util functions
 #------------------------------------------------------------------------------
@@ -103,13 +109,14 @@ def set_trainability(model, flag = False): # need to call compile() after this?
 def SDN(inputs):
     
     zz = Conv2D(64, (3,3), padding = 'same')(inputs)
-    zzz = Conv2D(64, (3,3), padding = 'same')(zz)
+#    zzz = Conv2D(64, (3,3), padding = 'same')(zz)
     
-    zzz = MaxPooling2D((2,2))(zzz)
+    zzz = MaxPooling2D((2,2))(zz)
     zzz = Conv2D(128, (3,3), padding = 'same')(zzz)
     
     zzz = UpSampling2D((2,2))(zzz) 
     zzz = Conv2D(64, (3,3), padding = 'same')(zzz)
+
     
     zzzz = multiply([zz, zzz]) 
     zzzz = Conv2D(2, (3,3), padding = 'same',
@@ -154,11 +161,11 @@ def preprocess(x):
 XtoVGG = Lambda(preprocess)(SDN_out)
 #XtoVGG = concatenate([SDN_out*255-123.68, SDN_out*255-116.779, SDN_out*255-103.939])     
 
-weights = [0,0,1,0,0]
+#weights = [1,0,0,1,0]
 #selected_layers = ['block1_conv2', 'block2_conv2', 
 #                   'block3_conv3', 'block4_conv3',
 #                   'block5_conv3']
-selected_layers = ['block3_conv3']
+selected_layers = ['block4_conv3']
 
 base_model = VGG16(weights='imagenet', include_top=False)
 set_trainability(base_model, False)
@@ -191,7 +198,7 @@ def corr(y_True, y_Pred):
     y_True = K.reshape(y_True, (-1, h*w, d))
     y_Pred = K.reshape(y_Pred, (-1, h*w, d))
     
-    cc = dot([y_True, y_Pred], 2, True) # use batch_dot? permuation first? same.
+    cc = dot([y_Pred, y_Pred], 2, True) # use batch_dot? permuation first? same.
     
 #    cc = K.relu(cc)
 
@@ -201,11 +208,6 @@ def corr(y_True, y_Pred):
 
 whole_model.compile(loss = corr, 
 #                    loss_weights= weights,
-#                    loss_weights={'model_3': 1.0, 
-#                                  'model_3': 1.0, 
-#                                  'model_3': 1.0,
-#                                  'model_3': 0.0,
-#                                  'model_3': 0.0},
                     optimizer='adam')
 
 # pretrain with sdn itself?
@@ -213,7 +215,7 @@ whole_model.compile(loss = corr,
 #sdn.compile(loss = customLoss, 
 #              optimizer = Adam(decay=1e-5),
 #              )   
-#sdn.fit(x_train[:3], y_train[:3], epochs=epochs)
+#sdn.fit(x_train[:1], y_train[:1], epochs=epochs)
 
 whole_model.fit(x_train[:1], Y_loss, epochs=50)
 
