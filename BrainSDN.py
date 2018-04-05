@@ -130,7 +130,7 @@ def sobelLoss(yTrue,yPred): #Consider smooth in front
 
     #now you just apply the mse:
     return K.mean(K.square(sobelTrue - sobelPred)), sobelTrue
-#    return K.meansobelTrue*sobelPred/K.
+
 
 def total_variation(y):
     assert K.ndim(y) == 4
@@ -150,7 +150,12 @@ def total_variation_loss(yTrue, yPred):
 * weights asigned for the two lossses?
 """
 def customLoss(yTrue, yPred):
-     img_loss = kullback_leibler_divergence(K.reshape(yTrue, [-1])/K.sum(yTrue), K.reshape(yPred, [-1])/K.sum(yPred))
+#     norm_T = K.pow(K.sum(K.square(yTrue)), 0.5)
+#     norm_P = K.pow(K.sum(K.square(yPred)), 0.5)
+#     img_loss = kullback_leibler_divergence(K.reshape(yTrue, [-1])/K.sum(yTrue), 
+#                                            K.reshape(yPred, [-1])/K.sum(yPred))
+     img_loss = kullback_leibler_divergence(K.softmax(K.reshape(yTrue, [-1])/K.sum(yTrue)), 
+                                            K.softmax(K.reshape(yPred, [-1])/K.sum(yPred)))
      sobel_loss, mask = sobelLoss(yTrue, yPred)
      BCE = binary_crossentropy(yTrue, yPred)
      
