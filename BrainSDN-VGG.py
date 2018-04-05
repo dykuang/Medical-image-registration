@@ -83,14 +83,14 @@ def vis_target(choice = sample_choice):
     plt.suptitle('target images')
 
 
-#cat1 = imread('cat4.jpg', as_grey = True)
-#cat2 = imread('cat5.jpg', as_grey = True)
-#cat1 = resize(cat1, (res,res), mode='reflect')
-#cat2 = resize(cat2, (res,res), mode='reflect')
-#x_train[0,:,:,0] = cat1
-#x_train[0,:,:,1] = cat2
-#
-#y_train[0,:,:,0] = cat2 
+cat1 = 1-imread('test1.png', as_grey = True)
+cat2 = 1-imread('test2.png', as_grey = True)
+cat1 = resize(cat1, (res,res), mode='reflect')
+cat2 = resize(cat2, (res,res), mode='reflect')
+x_train[0,:,:,0] = cat1
+x_train[0,:,:,1] = cat2
+
+y_train[0,:,:,0] = cat2 
     
 #x_train[0,:,:,0] = tsf.warp(x_train[0,:,:,0], tform)
 #------------------------------------------------------------------------------

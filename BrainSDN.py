@@ -66,11 +66,11 @@ def see_warp(n):
     
     plt.figure()
     plt.subplot(1,2,1)
-    plt.imshow(deformation[0,:,:,0],cmap='gray')
+    plt.imshow(deformation[0,:,:,0], cmap = 'terrain')
     plt.title('X')
     plt.axis('off')
     plt.subplot(1,2,2)
-    plt.imshow(deformation[0,:,:,1],cmap='gray')
+    plt.imshow(deformation[0,:,:,1], cmap = 'terrain')
     plt.title('Y')
     plt.axis('off')
      
@@ -159,7 +159,7 @@ def customLoss(yTrue, yPred):
      sobel_loss, mask = sobelLoss(yTrue, yPred)
      BCE = binary_crossentropy(yTrue, yPred)
      
-     return img_loss + sobel_loss + 0.3*BCE
+     return img_loss + sobel_loss + 0.3*BCE 
 
 if __name__ == '__main__':  
     #------------------------------------------------------------------------------
@@ -203,20 +203,18 @@ if __name__ == '__main__':
     
     model = SDN(input_shape)
     
-    model.compile(loss = customLoss, 
+    model.compile(loss = 'mse', 
               optimizer = Adam(decay=1e-5),
               )
 #    
-# =============================================================================
-#     cat1 = imread('cat4.jpg', as_grey = True)
-#     cat2 = imread('cat5.jpg', as_grey = True)
-#     cat1 = resize(cat1, (res,res), mode='reflect')
-#     cat2 = resize(cat2, (res,res), mode='reflect')
-#     x_train[0,:,:,0] = cat1
-#     x_train[0,:,:,1] = cat2
-#      
-#     y_train[0,:,:,0] = cat2
-# =============================================================================
+    cat1 = 1-imread('test1.png', as_grey = True)
+    cat2 = 1-imread('test2.png', as_grey = True)
+    cat1 = resize(cat1, (res,res), mode='reflect')
+    cat2 = resize(cat2, (res,res), mode='reflect')
+    x_train[0,:,:,0] = cat1
+    x_train[0,:,:,1] = cat2
+     
+    y_train[0,:,:,0] = cat2
     
     history = model.fit(x_train[:1], y_train[:1], 
                     epochs=epochs, batch_size=batch_size,

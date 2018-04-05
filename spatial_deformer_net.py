@@ -169,7 +169,7 @@ class SpatialDeformer(Layer):
 #
 #        deformation_interp = self._interpolate(deformation,
 #                                               x_s_df_flatten,
-#                                               y_s__df_flatten,
+#                                               y_s_df_flatten,
 #                                               output_size)
         
 #        deformation = tf.expand_dims(deformation , 2)
