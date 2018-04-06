@@ -93,6 +93,7 @@ def SDN(input_shape):
     zzzz = Conv2D(2, (3,3), padding = 'same',
                       kernel_initializer= 'zeros',
                       bias_initializer = 'zeros',
+                      activity_regularizer = total_variation,
                       activation = 'linear')(zzzz)
     
     locnet = Model(inputs, zzzz)
@@ -136,7 +137,7 @@ def total_variation(y):
     assert K.ndim(y) == 4
     a = K.square(y[:, :res - 1, :res - 1, :] - y[:, 1:, :res - 1, :])
     b = K.square(y[:, :res - 1, :res - 1, :] - y[:, :res - 1, 1:, :])
-    return K.mean(K.pow(a + b, 2)) # tweak the power?
+    return K.mean(K.pow(a + b, 0.5)) # tweak the power?
 
 def total_variation_loss(yTrue, yPred):
     assert K.ndim(yTrue) == 4
@@ -158,7 +159,7 @@ def customLoss(yTrue, yPred):
                                             K.softmax(K.reshape(yPred, [-1])/K.sum(yPred)))
      sobel_loss, mask = sobelLoss(yTrue, yPred)
      BCE = binary_crossentropy(yTrue, yPred)
-     
+#     return img_loss
      return img_loss + sobel_loss + 0.3*BCE 
 
 if __name__ == '__main__':  
