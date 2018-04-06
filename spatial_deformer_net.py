@@ -48,7 +48,9 @@ class SpatialDeformer(Layer):
         return (None,
                 int(output_size[0]),
                 int(output_size[1]),
-                1)  #brutally change it to one
+                1, #brutally change it to one
+#                int(input_shape[-1])
+                )  
 
     def call(self, X, mask=None):
         deformation = self.locnet.call(X)

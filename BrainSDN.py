@@ -44,11 +44,49 @@ def expandedSobel(inputTensor):
 
     return Filter * inputChannels 
 
+def vis_grid(disp, direct = 2): # xy is of shape h*w*2
+     
+     w, h= np.shape(disp)[0], np.shape(disp)[1]
+     
+     x = np.linspace(-1., 1., w)
+     y = np.linspace(-1., 1., h)
+     
+     xx , yy = np.meshgrid(x, y)
+     
+     xy = np.stack([xx,yy], 2) + disp
+     
+     plt.figure()
+     
+     if direct == 0:
+          for row in range(w):
+               x, y = xy[row,:, 0], yy[row,:]       
+               plt.plot(x,y, color = 'b')
+          for col in range(h):
+               x, y = xy[:, col, 0], yy[:, col]       
+               plt.plot(x,y, color = 'b') 
+     
+     elif direct == 1:  
+          for row in range(w):
+               x, y = xx[row,:], xy[row,:, 1]       
+               plt.plot(x,y, color = 'b')
+          for col in range(h):
+               x, y = xx[:, col], xy[:, col, 1]       
+               plt.plot(x,y, color = 'b') 
+     
+     else:
+          for row in range(w):
+               x, y = xy[row,:, 0], xy[row,:, 1]       
+               plt.plot(x,y, color = 'b')
+          for col in range(h):
+               x, y = xy[:, col, 0], xy[:, col, 1]       
+               plt.plot(x,y, color = 'b') 
+
+     
 def see_warp(n):
     
     sample = x_train[n:n+1]
-    deformed_sample = model.predict(sample)
-    deformation = model.layers[1].locnet.predict(sample)
+    deformed_sample = sdn.predict(sample)[0]
+    deformation = sdn.layers[-2].locnet.predict(sample)
     
     plt.figure()
     plt.subplot(1,3,1)
@@ -73,12 +111,13 @@ def see_warp(n):
     plt.imshow(deformation[0,:,:,1], cmap = 'terrain')
     plt.title('Y')
     plt.axis('off')
+    
+
      
 #------------------------------------------------------------------------------
 # NN to produce displacement field
 #------------------------------------------------------------------------------
-def SDN(input_shape):
-    inputs = Input(shape = input_shape)
+def SDN(inputs):
     
     zz = Conv2D(64, (3,3), padding = 'same')(inputs)
     zzz = Conv2D(64, (3,3), padding = 'same')(zz)
@@ -101,11 +140,8 @@ def SDN(input_shape):
     x1 = SpatialDeformer(localization_net=locnet,
                              output_size=(input_shape[0],input_shape[1]), 
                              input_shape=input_shape)(inputs)
-
-
-    sdn = Model(inputs, x1)
     
-    return sdn
+    return x1, zzzz
 
 
 #------------------------------------------------------------------------------
@@ -134,19 +170,19 @@ def sobelLoss(yTrue,yPred): #Consider smooth in front
 
 
 def total_variation(y):
-    assert K.ndim(y) == 4
+#    assert K.ndim(y) == 4
     a = K.square(y[:, :res - 1, :res - 1, :] - y[:, 1:, :res - 1, :])
     b = K.square(y[:, :res - 1, :res - 1, :] - y[:, :res - 1, 1:, :])
-    return K.mean(K.pow(a + b, 0.5)) # tweak the power?
+    return K.sum(K.pow(a + b, 0.5)) # tweak the power?
 
 def total_variation_loss(yTrue, yPred):
-    assert K.ndim(yTrue) == 4
+#    assert K.ndim(yTrue) == 4
     diff = yTrue - yPred
 
     return total_variation(diff) 
 
 """
-* Add gradient loss in img_loss? may help emphasizing edges
+* Add gradient loss in img_loss? may help emphasize edges
 * different forms of reg_loss?
 * weights asigned for the two lossses?
 """
@@ -160,7 +196,7 @@ def customLoss(yTrue, yPred):
      sobel_loss, mask = sobelLoss(yTrue, yPred)
      BCE = binary_crossentropy(yTrue, yPred)
 #     return img_loss
-     return img_loss + sobel_loss + 0.3*BCE 
+     return img_loss + sobel_loss + 0.3*BCE
 
 if __name__ == '__main__':  
     #------------------------------------------------------------------------------
@@ -168,7 +204,7 @@ if __name__ == '__main__':
     #------------------------------------------------------------------------------
     epochs = 50
     batch_size = 8
-    res = 224
+    res = 128
     input_shape = (res,res,2)
     preprocess_flag = False
     
@@ -202,22 +238,29 @@ if __name__ == '__main__':
     print('y_train shape: {}'.format(y_train.shape))
     print('-'*40) 
     
-    model = SDN(input_shape)
+    inputs = Input(shape = input_shape)
+    sdn = Model(inputs, SDN(inputs))
     
-    model.compile(loss = 'mse', 
-              optimizer = Adam(decay=1e-5),
-              )
+    sdn.compile(loss = [customLoss, total_variation_loss],
+                loss_weights = [1.0, 0.0],
+                optimizer = Adam(decay=1e-5),
+                )
 #    
-    cat1 = 1-imread('test1.png', as_grey = True)
-    cat2 = 1-imread('test2.png', as_grey = True)
-    cat1 = resize(cat1, (res,res), mode='reflect')
-    cat2 = resize(cat2, (res,res), mode='reflect')
-    x_train[0,:,:,0] = cat1
-    x_train[0,:,:,1] = cat2
-     
-    y_train[0,:,:,0] = cat2
+# =============================================================================
+#     cat1 = 1-imread('square.png', as_grey = True)/255
+#     from skimage import transform as tsf
+#     tform = tsf.SimilarityTransform(scale=1.0, rotation=0, translation=(0, 20))
+#     cat2 = tsf.warp(cat1, tform)
+# #    cat2 = imread('test2.png', as_grey = True)
+#     cat1 = resize(cat1, (res,res), mode='reflect')
+#     cat2 = resize(cat2, (res,res), mode='reflect')
+#     x_train[0,:,:,0] = cat1
+#     x_train[0,:,:,1] = cat2
+#      
+#     y_train[0,:,:,0] = cat2
+# =============================================================================
     
-    history = model.fit(x_train[:1], y_train[:1], 
+    history = sdn.fit(x_train[:1], [y_train[:1], np.zeros((1, res, res, 2))],
                     epochs=epochs, batch_size=batch_size,
                     verbose = 0,
                     shuffle = True)
