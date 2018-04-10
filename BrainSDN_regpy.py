@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Mar 21 21:34:13 2018
+Created on Sat Apr  7 19:03:23 2018
 
-@author: dykuang
+@author: dykua
 
-create a module of SDN to be used further in GAN
+A copy of BrainSDN for testing the proper regularization loss
 """
 
 
@@ -85,8 +85,7 @@ def vis_grid(disp, direct = 2): # xy is of shape h*w*2
 def see_warp(n):
     
     sample = x_train[n:n+1]
-    deformed_sample = sdn.predict(sample)
-    deformation = sdn.layers[-1].locnet.predict(sample)
+    deformed_sample, deformation = sdn.predict(sample)
     print(K.eval(total_variation(deformation)))
     
     plt.figure()
@@ -120,7 +119,7 @@ def see_warp(n):
 #------------------------------------------------------------------------------
 # NN to produce displacement field
 #------------------------------------------------------------------------------
-from keras.regularizers import l1, l2
+from keras.regularizers import l1
 def SDN(inputs):
     
     zz = Conv2D(64, (3,3), padding = 'same')(inputs)
@@ -134,10 +133,10 @@ def SDN(inputs):
     
     zzzz = multiply([zz, zzz]) 
     zzzz = Conv2D(2, (3,3), padding = 'same',
-                      kernel_initializer= 'zeros',
-                      bias_initializer = 'zeros',
-                      activity_regularizer = l2(1),
-                      activation = 'tanh')(zzzz)
+#                      kernel_initializer= 'zeros',
+#                      bias_initializer = 'zeros',
+#                      activity_regularizer = l1(0.001),
+                      activation = 'linear')(zzzz)
     
     locnet = Model(inputs, zzzz)
      
@@ -145,7 +144,7 @@ def SDN(inputs):
                              output_size=(input_shape[0],input_shape[1]), 
                              input_shape=input_shape)(inputs)
     
-    return x1
+    return x1, locnet(inputs)
 
 
 #------------------------------------------------------------------------------
@@ -177,13 +176,13 @@ def total_variation(y):
 #    assert K.ndim(y) == 4
     a = K.square(y[:, :res - 1, :res - 1, :] - y[:, 1:, :res - 1, :])
     b = K.square(y[:, :res - 1, :res - 1, :] - y[:, :res - 1, 1:, :])
-    return K.pow(K.sum(a + b), 0.5) + K.pow(K.sum(K.pow(y, 2)),0.5)# tweak the power?
+    return K.pow(K.sum(a + b), 0.5)# tweak the power?
 
 def total_variation_loss(yTrue, yPred):
 #    assert K.ndim(yTrue) == 4
     diff = yTrue - yPred
 
-    return total_variation(diff) + K.mean(K.square(diff))
+    return total_variation(diff) + K.pow(K.sum(K.pow(diff, 2)),0.5)
 
 """
 * Add gradient loss in img_loss? may help emphasize edges
@@ -246,8 +245,8 @@ if __name__ == '__main__':
       
     sdn = Model(inputs, SDN(inputs))
     
-    sdn.compile(loss = customLoss,
-#                loss_weights = [1.0, 0.0],
+    sdn.compile(loss = [customLoss, total_variation_loss],
+                loss_weights = [1.0, 0.01],
                 optimizer = Adam(decay=1e-5),
                 )
 #    
@@ -265,13 +264,13 @@ if __name__ == '__main__':
     y_train[0,:,:,0] = cat2
 # =============================================================================
     
-    history = sdn.fit(x_train[:1], y_train[:1], 
+    history = sdn.fit(x_train[:1], [y_train[:1], np.zeros((1,res,res,2))], 
                     epochs=epochs, batch_size=batch_size,
-                    verbose = 0,
+                    verbose = 1,
                     shuffle = True)
 
     plt.figure()
-    plt.plot(history.history['loss'])
+    plt.plot(history.history['model_1_loss'])
     
     
     see_warp(0)
