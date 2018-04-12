@@ -84,12 +84,22 @@ def vis_grid(disp, direct = 2): # xy is of shape h*w*2
                x, y = xy[:, col, 0], xy[:, col, 1]       
                plt.plot(x,y, color = 'b') 
                plt.ylim(1,-1)
+               
+
+from sklearn.metrics import jaccard_similarity_score   
+def j_score(yTrue, yPred):
+     js=[]
+     for yT, yP in zip(yTrue, yPred):
+          js.append(jaccard_similarity_score((yT>0).flatten(), (yP>0).flatten()))
+     js = np.stack(js)
+     return np.mean(js)
+
      
 def see_warp(n):
     
     sample = x_train[n:n+1]
     deformed_sample, deformation = sdn.predict(sample)
-    print(K.eval(total_variation(deformation)))
+#    print(K.eval(total_variation(deformation)))
     
     plt.figure()
     plt.subplot(1,3,1)
@@ -199,7 +209,7 @@ def customLoss(yTrue, yPred):
 #                                            K.reshape(yPred, [-1])/K.sum(yPred))
      img_loss = kullback_leibler_divergence(K.softmax(K.reshape(yTrue, [-1])), 
                                             K.softmax(K.reshape(yPred, [-1])))
-     sobel_loss = sobelLoss(yTrue, yPred)
+#     sobel_loss = sobelLoss(yTrue, yPred)
      BCE = binary_crossentropy(yTrue, yPred)
 #     return img_loss
      return img_loss + 0.3*BCE
@@ -209,8 +219,8 @@ if __name__ == '__main__':
     # Hyperparamters/Global setting
     #------------------------------------------------------------------------------
     epochs = 50
-    batch_size = 8
-    res = 64
+    batch_size = 16
+    res = 32
     input_shape = (res,res,2)
     preprocess_flag = False
     
@@ -248,32 +258,37 @@ if __name__ == '__main__':
       
     sdn = Model(inputs, SDN(inputs))
     
-    sdn.compile(loss = ['mse', sobelLoss],
+    sdn.compile(loss = [customLoss, sobelLoss],
                 loss_weights = [1.0, 0.001],
                 optimizer = Adam(decay=1e-5),
                 )
 #    
 # =============================================================================
-    cat1 = imread('sq.png', as_grey = True)
-#    from skimage import transform as tsf
-#    tform = tsf.SimilarityTransform(scale=1.0, rotation=0, translation=(0, -20))
-#    cat2 = tsf.warp(cat1, tform)
-    cat2 = imread('circ.png', as_grey = True)
-    cat1 = resize(cat1, (res,res), mode='reflect')
-    cat2 = resize(cat2, (res,res), mode='reflect')
-    x_train[0,:,:,0] = cat1
-    x_train[0,:,:,1] = cat2
-      
-    y_train[0,:,:,0] = cat2
+#    cat1 = imread('sq.png', as_grey = True)
+##    from skimage import transform as tsf
+##    tform = tsf.SimilarityTransform(scale=1.0, rotation=0, translation=(0, -20))
+##    cat2 = tsf.warp(cat1, tform)
+#    cat2 = imread('circ.png', as_grey = True)
+#    cat1 = resize(cat1, (res,res), mode='reflect')
+#    cat2 = resize(cat2, (res,res), mode='reflect')
+#    x_train[0,:,:,0] = cat1
+#    x_train[0,:,:,1] = cat2
+#      
+#    y_train[0,:,:,0] = cat2
 # =============================================================================
+    from sklearn.model_selection import train_test_split
+    X_train, X_test, Y_train, Y_test = train_test_split(
+                                            x_train, y_train, test_size=0.25)
     
-    history = sdn.fit(x_train[:1], [y_train[:1], np.zeros((1,res,res,2))], 
+    history = sdn.fit(X_train, [Y_train, np.zeros([len(Y_train), res, res, 2])], 
                     epochs=epochs, batch_size=batch_size,
-                    verbose = 1,
+                    verbose = 0,
                     shuffle = True)
+    
 
-#    plt.figure()
-#    plt.plot(history.history['model_3_loss'])
+    plt.figure()
+    plt.plot(history.history['loss'])
     
-    
+    print('Mean J-score on test_set is {}'.format(j_score(Y_test, sdn.predict(X_test)[0])))
     see_warp(0)
+

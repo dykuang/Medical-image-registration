@@ -60,7 +60,8 @@ def next_slice(ax):
 
 if __name__ == '__main__':
      import SimpleITK as sitk
-     Deli_datapath = r'C:\Users\Dongyang\Downloads\LPBA40\delineation_space\S09\S09.delineation.skullstripped.hdr'
+#     Deli_datapath = r'C:\Users\Dongyang\Downloads\LPBA40\delineation_space\S09\S09.delineation.skullstripped.hdr'
+     Deli_datapath = r'datasets/test_brain_vol.hdr'
      img = sitk.ReadImage(Deli_datapath)
      img_data = sitk.GetArrayViewFromImage(img)
      multi_slice_viewer(img_data,0)
