@@ -34,7 +34,7 @@ scharrFilter = K.constant([[[[3.,  3.]], [[0.,  10.]],[[-3.,  3.]]],
                       [[[10.,  0.]], [[0.,  0.]],[[-10.,  0.]]],
                       [[[3., -3.]], [[0., -10.]],[[-3., -3.]]]])
 
-Filter = sobelFilter
+Filter = scharrFilter
 
 def expandedSobel(inputTensor):
 
@@ -149,7 +149,7 @@ def SDN(inputs):
 #                      kernel_initializer= 'zeros',
 #                      bias_initializer = 'zeros',
 #                      activity_regularizer = l1(0.001),
-                      activation = 'linear')(zzzz)
+                      activation = 'tanh')(zzzz)
     
     locnet = Model(inputs, zzzz)
      
@@ -183,7 +183,8 @@ def sobelLoss(yTrue,yPred): #Consider smooth in front
 
     #now you just apply the mse:
 #    return K.mean(K.square(sobelTrue - sobelPred))
-    return K.pow(K.sum(K.square(sobelTrue - sobelPred)), 0.5)
+    return K.pow(K.sum(K.square(sobelTrue - sobelPred)), 0.5) + K.pow(K.sum(K.square(yTrue - yPred)),0.5)
+
 
 def total_variation(y):
 #    assert K.ndim(y) == 4
@@ -218,9 +219,9 @@ if __name__ == '__main__':
     #------------------------------------------------------------------------------
     # Hyperparamters/Global setting
     #------------------------------------------------------------------------------
-    epochs = 50
+    epochs = 70
     batch_size = 16
-    res = 32
+    res = 100
     input_shape = (res,res,2)
     preprocess_flag = False
     
@@ -258,37 +259,41 @@ if __name__ == '__main__':
       
     sdn = Model(inputs, SDN(inputs))
     
-    sdn.compile(loss = [customLoss, sobelLoss],
-                loss_weights = [1.0, 0.001],
+    sdn.compile(loss = ['mse', sobelLoss],
+                loss_weights = [1.0, 0.0017],
                 optimizer = Adam(decay=1e-5),
                 )
 #    
 # =============================================================================
-#    cat1 = imread('sq.png', as_grey = True)
-##    from skimage import transform as tsf
-##    tform = tsf.SimilarityTransform(scale=1.0, rotation=0, translation=(0, -20))
-##    cat2 = tsf.warp(cat1, tform)
-#    cat2 = imread('circ.png', as_grey = True)
-#    cat1 = resize(cat1, (res,res), mode='reflect')
-#    cat2 = resize(cat2, (res,res), mode='reflect')
-#    x_train[0,:,:,0] = cat1
-#    x_train[0,:,:,1] = cat2
-#      
-#    y_train[0,:,:,0] = cat2
+    cat1 = imread('circ1.png', as_grey = True)
+#    from skimage import transform as tsf
+#    tform = tsf.SimilarityTransform(scale=1.0, rotation=0, translation=(0, -20))
+#    cat2 = tsf.warp(cat1, tform)
+    cat2 = imread('circ.png', as_grey = True)
+    cat1 = resize(cat1, (res,res), mode='reflect')
+    cat2 = resize(cat2, (res,res), mode='reflect')
+    x_train[0,:,:,0] = cat1
+    x_train[0,:,:,1] = cat2
+      
+    y_train[0,:,:,0] = cat2
+    
+    history = sdn.fit(x_train[:1], [y_train[:1], np.zeros([1,res,res,2])],
+            epochs = epochs, batch_size = batch_size,
+            verbose = 0, shuffle = True)
 # =============================================================================
-    from sklearn.model_selection import train_test_split
-    X_train, X_test, Y_train, Y_test = train_test_split(
-                                            x_train, y_train, test_size=0.25)
-    
-    history = sdn.fit(X_train, [Y_train, np.zeros([len(Y_train), res, res, 2])], 
-                    epochs=epochs, batch_size=batch_size,
-                    verbose = 0,
-                    shuffle = True)
-    
-
+#    from sklearn.model_selection import train_test_split
+#    X_train, X_test, Y_train, Y_test = train_test_split(
+#                                            x_train, y_train, test_size=0.25)
+#    
+#    history = sdn.fit(X_train, [Y_train, np.zeros([len(Y_train), res, res, 2])], 
+#                    epochs=epochs, batch_size=batch_size,
+#                    verbose = 0,
+#                    shuffle = True)
+#    
+#
     plt.figure()
     plt.plot(history.history['loss'])
-    
-    print('Mean J-score on test_set is {}'.format(j_score(Y_test, sdn.predict(X_test)[0])))
+#    
+#    print('Mean J-score on test_set is {}'.format(j_score(Y_test, sdn.predict(X_test)[0])))
     see_warp(0)
 

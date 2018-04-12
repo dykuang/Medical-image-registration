@@ -63,7 +63,8 @@ def vis_grid(disp, direct = 2): # xy is of shape h*w*2
                plt.plot(x,y, color = 'b')
           for col in range(h):
                x, y = xy[:, col, 0], yy[:, col]       
-               plt.plot(x,y, color = 'b') 
+               plt.plot(x,y, color = 'b')
+               plt.ylim(1,-1)
      
      elif direct == 1:  
           for row in range(w):
@@ -71,7 +72,8 @@ def vis_grid(disp, direct = 2): # xy is of shape h*w*2
                plt.plot(x,y, color = 'b')
           for col in range(h):
                x, y = xx[:, col], xy[:, col, 1]       
-               plt.plot(x,y, color = 'b') 
+               plt.plot(x,y, color = 'b')
+               plt.ylim(1,-1)
      
      else:
           for row in range(w):
@@ -79,7 +81,8 @@ def vis_grid(disp, direct = 2): # xy is of shape h*w*2
                plt.plot(x,y, color = 'b')
           for col in range(h):
                x, y = xy[:, col, 0], xy[:, col, 1]       
-               plt.plot(x,y, color = 'b') 
+               plt.plot(x,y, color = 'b')
+               plt.ylim(1,-1)
 
 from sklearn.metrics import jaccard_similarity_score   
 def j_score(yTrue, yPred):
@@ -217,7 +220,7 @@ if __name__ == '__main__':
     #------------------------------------------------------------------------------
     epochs = 25
     batch_size = 8
-    res = 32
+    res = 128
     input_shape = (res,res,2)
     preprocess_flag = False
     
@@ -255,37 +258,41 @@ if __name__ == '__main__':
       
     sdn = Model(inputs, SDN(inputs))
     
-    sdn.compile(loss = customLoss,
+    sdn.compile(loss = 'mse',
 #                loss_weights = [1.0, 0.0],
                 optimizer = Adam(decay=1e-5),
                 )
 #    
 # =============================================================================
-#    cat1 = imread('slice1.png', as_grey = True)
-##    from skimage import transform as tsf
-##    tform = tsf.SimilarityTransform(scale=1.0, rotation=0, translation=(0, -20))
-##    cat2 = tsf.warp(cat1, tform)
-#    cat2 = imread('slice2.png', as_grey = True)
-#    cat1 = resize(cat1, (res,res), mode='reflect')
-#    cat2 = resize(cat2, (res,res), mode='reflect')
-#    x_train[0,:,:,0] = cat1
-#    x_train[0,:,:,1] = cat2
-#      
-#    y_train[0,:,:,0] = cat2
+    cat1 = imread('circ1.png', as_grey = True)
+#    from skimage import transform as tsf
+#    tform = tsf.SimilarityTransform(scale=0.8, rotation=0, translation=(0, 0))
+#    cat2 = tsf.warp(cat1, tform)
+    cat2 = imread('circ.png', as_grey = True)
+    cat1 = resize(cat1, (res,res), mode='reflect')
+    cat2 = resize(cat2, (res,res), mode='reflect')
+    x_train[0,:,:,0] = cat1
+    x_train[0,:,:,1] = cat2
+      
+    y_train[0,:,:,0] = cat2
+    
+    history=sdn.fit(x_train[:1], y_train[:1],
+            epochs = epochs, batch_size = batch_size,
+            verbose = 0, shuffle = True)
    
 # =============================================================================
-    from sklearn.model_selection import train_test_split
-    X_train, X_test, Y_train, Y_test = train_test_split(
-                                            x_train, y_train, test_size=0.25)
-    
-    history = sdn.fit(X_train, Y_train, 
-                    epochs=epochs, batch_size=batch_size,
-                    verbose = 0,
-                    shuffle = True)
+#    from sklearn.model_selection import train_test_split
+#    X_train, X_test, Y_train, Y_test = train_test_split(
+#                                            x_train, y_train, test_size=0.25)
+#    
+#    history = sdn.fit(X_train, Y_train, 
+#                    epochs=epochs, batch_size=batch_size,
+#                    verbose = 0,
+#                    shuffle = True)
     
 
-    plt.figure()
-    plt.plot(history.history['loss'])
-    
-    print('Mean J-score on test_set is {}'.format(j_score(Y_test, sdn.predict(X_test))))
+#    plt.figure()
+#    plt.plot(history.history['loss'])
+#    
+#    print('Mean J-score on test_set is {}'.format(j_score(Y_test, sdn.predict(X_test))))
     see_warp(0)

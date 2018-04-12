@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 res = 128
 img = np.zeros((res, res), dtype=np.uint8)
-rr, cc = circle(res/2, res/2, res/4)
+rr, cc = circle(res/2, res/2, res/6)
 img[rr, cc] = 1
 plt.figure()
 plt.imshow(img)
