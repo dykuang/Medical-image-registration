@@ -61,18 +61,21 @@ def vis_grid(disp, direct = 2): # xy is of shape h*w*2
           for row in range(w):
                x, y = xy[row,:, 0], yy[row,:]       
                plt.plot(x,y, color = 'b')
+#               plt.ylim(1,-1)
           for col in range(h):
                x, y = xy[:, col, 0], yy[:, col]       
                plt.plot(x,y, color = 'b') 
+               plt.ylim(1,-1)
      
      elif direct == 1:  
           for row in range(w):
                x, y = xx[row,:], xy[row,:, 1]       
                plt.plot(x,y, color = 'b')
+#               plt.ylim(1,-1)
           for col in range(h):
                x, y = xx[:, col], xy[:, col, 1]       
                plt.plot(x,y, color = 'b') 
-     
+               plt.ylim(1,-1)
      else:
           for row in range(w):
                x, y = xy[row,:, 0], xy[row,:, 1]       
@@ -80,7 +83,7 @@ def vis_grid(disp, direct = 2): # xy is of shape h*w*2
           for col in range(h):
                x, y = xy[:, col, 0], xy[:, col, 1]       
                plt.plot(x,y, color = 'b') 
-
+               plt.ylim(1,-1)
      
 def see_warp(n):
     
@@ -169,8 +172,8 @@ def sobelLoss(yTrue,yPred): #Consider smooth in front
     sobelPred = K.depthwise_conv2d(yPred,filt, padding = 'same')
 
     #now you just apply the mse:
-    return K.mean(K.square(sobelTrue - sobelPred))
-
+#    return K.mean(K.square(sobelTrue - sobelPred))
+    return K.pow(K.sum(K.square(sobelTrue - sobelPred)), 0.5)
 
 def total_variation(y):
 #    assert K.ndim(y) == 4
@@ -199,7 +202,7 @@ def customLoss(yTrue, yPred):
      sobel_loss = sobelLoss(yTrue, yPred)
      BCE = binary_crossentropy(yTrue, yPred)
 #     return img_loss
-     return img_loss + sobel_loss + 0.3*BCE
+     return img_loss + 0.3*BCE
 
 if __name__ == '__main__':  
     #------------------------------------------------------------------------------
@@ -207,7 +210,7 @@ if __name__ == '__main__':
     #------------------------------------------------------------------------------
     epochs = 50
     batch_size = 8
-    res = 128
+    res = 64
     input_shape = (res,res,2)
     preprocess_flag = False
     
@@ -245,17 +248,17 @@ if __name__ == '__main__':
       
     sdn = Model(inputs, SDN(inputs))
     
-    sdn.compile(loss = [customLoss, total_variation_loss],
-                loss_weights = [1.0, 0.01],
+    sdn.compile(loss = ['mse', sobelLoss],
+                loss_weights = [1.0, 0.001],
                 optimizer = Adam(decay=1e-5),
                 )
 #    
 # =============================================================================
-    cat1 = 1-imread('square.jpg', as_grey = True)/255
-    from skimage import transform as tsf
-    tform = tsf.SimilarityTransform(scale=1.0, rotation=0, translation=(0, -20))
-    cat2 = tsf.warp(cat1, tform)
-#    cat2 = imread('sq.png', as_grey = True)
+    cat1 = imread('sq.png', as_grey = True)
+#    from skimage import transform as tsf
+#    tform = tsf.SimilarityTransform(scale=1.0, rotation=0, translation=(0, -20))
+#    cat2 = tsf.warp(cat1, tform)
+    cat2 = imread('circ.png', as_grey = True)
     cat1 = resize(cat1, (res,res), mode='reflect')
     cat2 = resize(cat2, (res,res), mode='reflect')
     x_train[0,:,:,0] = cat1
@@ -269,8 +272,8 @@ if __name__ == '__main__':
                     verbose = 1,
                     shuffle = True)
 
-    plt.figure()
-    plt.plot(history.history['model_1_loss'])
+#    plt.figure()
+#    plt.plot(history.history['model_3_loss'])
     
     
     see_warp(0)
