@@ -219,7 +219,7 @@ if __name__ == '__main__':
     #------------------------------------------------------------------------------
     # Hyperparamters/Global setting
     #------------------------------------------------------------------------------
-    epochs = 70
+    epochs = 50
     batch_size = 16
     res = 100
     input_shape = (res,res,2)
@@ -260,23 +260,23 @@ if __name__ == '__main__':
     sdn = Model(inputs, SDN(inputs))
     
     sdn.compile(loss = ['mse', sobelLoss],
-                loss_weights = [1.0, 0.0017],
+                loss_weights = [1.0, 0.0002],
                 optimizer = Adam(decay=1e-5),
                 )
 #    
 # =============================================================================
-    cat1 = imread('circ1.png', as_grey = True)
-#    from skimage import transform as tsf
-#    tform = tsf.SimilarityTransform(scale=1.0, rotation=0, translation=(0, -20))
-#    cat2 = tsf.warp(cat1, tform)
-    cat2 = imread('circ.png', as_grey = True)
-    cat1 = resize(cat1, (res,res), mode='reflect')
-    cat2 = resize(cat2, (res,res), mode='reflect')
-    x_train[0,:,:,0] = cat1
-    x_train[0,:,:,1] = cat2
-      
-    y_train[0,:,:,0] = cat2
-    
+#    cat1 = 1-imread('test1.png', as_grey = True)
+##    from skimage import transform as tsf
+##    tform = tsf.SimilarityTransform(scale=1.0, rotation=0, translation=(0, -20))
+##    cat2 = tsf.warp(cat1, tform)
+#    cat2 = 1-imread('test2.png', as_grey = True)
+#    cat1 = resize(cat1, (res,res), mode='reflect')
+#    cat2 = resize(cat2, (res,res), mode='reflect')
+#    x_train[0,:,:,0] = cat1
+#    x_train[0,:,:,1] = cat2
+#      
+#    y_train[0,:,:,0] = cat2
+#    
     history = sdn.fit(x_train[:1], [y_train[:1], np.zeros([1,res,res,2])],
             epochs = epochs, batch_size = batch_size,
             verbose = 0, shuffle = True)
