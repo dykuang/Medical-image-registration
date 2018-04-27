@@ -50,19 +50,20 @@ def previous_slice(ax):
     volume = ax.volume
     ax.index = (ax.index - 1) % volume.shape[0]  # wrap around using %
     ax.images[0].set_array(volume[ax.index])
+    print(ax.index)
 
 def next_slice(ax):
     volume = ax.volume
     ax.index = (ax.index + 1) % volume.shape[0]
     ax.images[0].set_array(volume[ax.index])
-#    print(ax.index)  # could create a slider for it
+    print(ax.index)  # could create a slider for it
     
 
 if __name__ == '__main__':
      import SimpleITK as sitk
-#     Deli_datapath = r'C:\Users\Dongyang\Downloads\LPBA40\delineation_space\S09\S09.delineation.skullstripped.hdr'
-     Deli_datapath = r'datasets/test_brain_vol.hdr'
-#     Deli_datapath = r'C:\Users\Dongyang\Downloads\LPBA40\delineation_space\S09\S09.delineation.structure.label.hdr'
+#     Deli_datapath = r'C:\Users\Dongyang\Downloads\LPBA40\delineation_space\S08\S08.delineation.skullstripped.hdr'
+#     Deli_datapath = r'datasets/test_brain_vol.hdr'
+     Deli_datapath = r'C:\Users\Dongyang\Downloads\LPBA40\delineation_space\S09\S09.delineation.structure.label.hdr'
      img = sitk.ReadImage(Deli_datapath)
      img_data = sitk.GetArrayViewFromImage(img)
      multi_slice_viewer(img_data,0)

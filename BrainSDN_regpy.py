@@ -44,6 +44,19 @@ def expandedSobel(inputTensor):
 
     return Filter * inputChannels 
 
+def get_jacobian(disp):
+#    assert K.ndim(y) == 4
+
+    xx = np.square(disp[:, :res - 1, :res - 1, 0] - disp[:, 1:, :res - 1, 0])
+    xy = np.square(disp[:, :res - 1, :res - 1, 0] - disp[:, :res - 1, 1:, 0])
+    
+    yx = np.square(disp[:, :res - 1, :res - 1, 1] - disp[:, 1:, :res - 1, 1])
+    yy = np.square(disp[:, :res - 1, :res - 1, 1] - disp[:, :res - 1, 1:, 1])
+    
+    J = xx*yy - xy*yx
+
+    return J
+
 def vis_grid(disp, direct = 2): # xy is of shape h*w*2
      
      w, h= np.shape(disp)[0], np.shape(disp)[1]
@@ -66,6 +79,7 @@ def vis_grid(disp, direct = 2): # xy is of shape h*w*2
                x, y = xy[:, col, 0], yy[:, col]       
                plt.plot(x,y, color = 'b') 
                plt.ylim(1,-1)
+               plt.axis('equal')
      
      elif direct == 1:  
           for row in range(w):
@@ -76,6 +90,7 @@ def vis_grid(disp, direct = 2): # xy is of shape h*w*2
                x, y = xx[:, col], xy[:, col, 1]       
                plt.plot(x,y, color = 'b') 
                plt.ylim(1,-1)
+               plt.axis('equal')
      else:
           for row in range(w):
                x, y = xy[row,:, 0], xy[row,:, 1]       
@@ -84,13 +99,36 @@ def vis_grid(disp, direct = 2): # xy is of shape h*w*2
                x, y = xy[:, col, 0], xy[:, col, 1]       
                plt.plot(x,y, color = 'b') 
                plt.ylim(1,-1)
+               plt.axis('equal')
                
+from scipy import interpolate
+# output grid displacement at different resolutions by interpolation
+def grid_interpolation(grid_value, resolution = [16,16]):
+     w, h= np.shape(grid_value)[1], np.shape(grid_value)[2]
+     
+     x = np.linspace(-1., 1., w)
+     y = np.linspace(-1., 1., h)
+     
+     xx , yy = np.meshgrid(x, y)
+
+     x_f = interpolate.interp2d(xx, yy, grid_value[0,:,:,0], kind='linear') 
+     y_f = interpolate.interp2d(xx, yy, grid_value[0,:,:,1], kind='linear')
+     
+     
+     x = np.linspace(-1., 1., resolution[0])
+     y = np.linspace(-1., 1., resolution[1])
+     
+     x_val = x_f(x,y)
+     y_val = y_f(x,y)
+     
+     return np.stack([x_val, y_val], axis = 2)     
+     
 
 from sklearn.metrics import jaccard_similarity_score   
 def j_score(yTrue, yPred):
      js=[]
      for yT, yP in zip(yTrue, yPred):
-          js.append(jaccard_similarity_score((yT>0).flatten(), (yP>0).flatten()))
+          js.append(jaccard_similarity_score((yT>0.1).flatten(), (yP>0.1).flatten()))
      js = np.stack(js)
      return np.mean(js)
 
@@ -115,6 +153,9 @@ def see_warp(n):
     plt.title('fix')
     plt.axis('off')
     
+    print('J-score before:\t {}'.format(j_score(sample[0,:,:,1], sample[0,:,:,0])))
+    print('J-score after:\t {}'.format(j_score(sample[0,:,:,1], deformed_sample[0,:,:,0])))
+    
     plt.figure()
     plt.subplot(1,2,1)
     plt.imshow(deformation[0,:,:,0], cmap = 'terrain')
@@ -124,18 +165,24 @@ def see_warp(n):
     plt.imshow(deformation[0,:,:,1], cmap = 'terrain')
     plt.title('Y')
     plt.axis('off')
+
+    plt.figure()
+    plt.imshow(deformation[0,:,:,0]**2 + deformation[0,:,:,1]**2, cmap = 'terrain')
+    plt.title('Attention map')
+    plt.axis('off')       
     
     vis_grid(deformation[0])
-    
+
 
      
 #------------------------------------------------------------------------------
 # NN to produce displacement field
 #------------------------------------------------------------------------------
 from keras.regularizers import l1
+from keras.layers import Conv2DTranspose
 def SDN(inputs):
     
-    zz = Conv2D(64, (3,3), padding = 'same')(inputs)
+    zz = Conv2D(64, (3,3), padding = 'same')(inputs) #different stride than 1?
     zzz = Conv2D(64, (3,3), padding = 'same')(zz)
     
     zzz = MaxPooling2D((2,2))(zzz)
@@ -143,6 +190,8 @@ def SDN(inputs):
     
     zzz = UpSampling2D((2,2))(zzz) 
     zzz = Conv2D(64, (3,3), padding = 'same')(zzz)
+    
+#    zzz = Conv2DTranspose(64, (2,2), strides=(2,2), padding = 'same')(zzz) # A different upsampling
     
     zzzz = multiply([zz, zzz]) 
     zzzz = Conv2D(2, (3,3), padding = 'same',
@@ -159,6 +208,69 @@ def SDN(inputs):
     
     return x1, locnet(inputs)
 
+def SDN_nopooling(inputs):
+    
+    zz = Conv2D(64, (3,3), padding = 'same')(inputs) #different stride than 1?
+    zzz = Conv2D(64, (3,3), padding = 'same')(zz)
+    
+    zzz = MaxPooling2D((2,2))(zzz)
+    zzz = Conv2D(128, (3,3), padding = 'same')(zzz)
+    
+#    zzz = UpSampling2D((2,2))(zzz) 
+#    zzz = Conv2D(64, (3,3), padding = 'same')(zzz)
+    
+    zzz = Conv2DTranspose(64, (3,3), strides=(2,2), padding = 'same')(zzz) # A different upsampling
+    
+    zzzz = multiply([zz, zzz]) 
+    zzzz = Conv2D(2, (3,3), padding = 'same',
+#                      kernel_initializer= 'zeros',
+#                      bias_initializer = 'zeros',
+#                      activity_regularizer = l1(0.001),
+                      activation = 'tanh')(zzzz)
+    
+    locnet = Model(inputs, zzzz)
+     
+    x1 = SpatialDeformer(localization_net=locnet,
+                             output_size=(input_shape[0],input_shape[1]), 
+                             input_shape=input_shape)(inputs)
+    
+    return x1, locnet(inputs)
+
+
+def SDN_deeper(inputs):
+    z1_1 = Conv2D(32, (2,2), padding = 'same')(inputs)
+    z1_2 = Conv2D(32, (2,2), padding = 'same')(z1_1)
+    
+    z2 = MaxPooling2D((2,2))(z1_2)
+    z2_1 = Conv2D(64, (2,2), padding = 'same')(z2)
+    z2_2 = Conv2D(64, (2,2), padding = 'same')(z2_1)
+    
+    z3 = MaxPooling2D((2,2))(z2_2)
+    z3 = Conv2D(128, (2,2), padding = 'same')(z3)
+
+    
+    z3 = UpSampling2D((2,2))(z3) 
+    z3 = Conv2D(64, (2,2), padding = 'same')(z3)   
+    z4 = multiply([z2_1, z3]) 
+    
+    z4 = UpSampling2D((2,2))(z3)
+    z4 = Conv2D(32, (2,2), padding = 'same')(z4)
+    z5= multiply([z1_1, z4])    
+    
+ 
+    zzzz = Conv2D(2, (2,2), padding = 'same',
+#                      kernel_initializer= 'zeros',
+#                      bias_initializer = 'zeros',
+#                      activity_regularizer = l1(0.001),
+                      activation = 'tanh')(z5)
+    
+    locnet = Model(inputs, zzzz)
+     
+    x1 = SpatialDeformer(localization_net=locnet,
+                             output_size=(input_shape[0],input_shape[1]), 
+                             input_shape=input_shape)(inputs)
+    
+    return x1, locnet(inputs)
 
 #------------------------------------------------------------------------------
 # Custom Loss
@@ -186,17 +298,19 @@ def sobelLoss(yTrue,yPred): #Consider smooth in front
     return K.pow(K.sum(K.square(sobelTrue - sobelPred)), 0.5) + K.pow(K.sum(K.square(yTrue - yPred)),0.5)
 
 
+
 def total_variation(y):
 #    assert K.ndim(y) == 4
     a = K.square(y[:, :res - 1, :res - 1, :] - y[:, 1:, :res - 1, :])
     b = K.square(y[:, :res - 1, :res - 1, :] - y[:, :res - 1, 1:, :])
+    
     return K.pow(K.sum(a + b), 0.5)# tweak the power?
 
 def total_variation_loss(yTrue, yPred):
 #    assert K.ndim(yTrue) == 4
     diff = yTrue - yPred
 
-    return total_variation(diff) + K.pow(K.sum(K.pow(diff, 2)),0.5)
+    return 10*total_variation(diff) + 0.1*K.pow(K.sum(K.pow(diff, 2)),0.5)
 
 """
 * Add gradient loss in img_loss? may help emphasize edges
@@ -259,41 +373,46 @@ if __name__ == '__main__':
       
     sdn = Model(inputs, SDN(inputs))
     
-    sdn.compile(loss = ['mse', sobelLoss],
+    sdn.compile(loss = ['mse', total_variation_loss],
                 loss_weights = [1.0, 0.0002],
                 optimizer = Adam(decay=1e-5),
                 )
 #    
 # =============================================================================
-#    cat1 = 1-imread('test1.png', as_grey = True)
+#    cat1 = imread('S08_095.png', as_grey = True)
 ##    from skimage import transform as tsf
-##    tform = tsf.SimilarityTransform(scale=1.0, rotation=0, translation=(0, -20))
+##    tform = tsf.SimilarityTransform(scale=1.0, rotation=0, translation=(0, -10))
 ##    cat2 = tsf.warp(cat1, tform)
-#    cat2 = 1-imread('test2.png', as_grey = True)
+#    cat2 = imread('S09_085.png', as_grey = True)
 #    cat1 = resize(cat1, (res,res), mode='reflect')
 #    cat2 = resize(cat2, (res,res), mode='reflect')
 #    x_train[0,:,:,0] = cat1
 #    x_train[0,:,:,1] = cat2
 #      
 #    y_train[0,:,:,0] = cat2
-#    
-    history = sdn.fit(x_train[:1], [y_train[:1], np.zeros([1,res,res,2])],
-            epochs = epochs, batch_size = batch_size,
-            verbose = 0, shuffle = True)
+##    
+#    history = sdn.fit(x_train[:1], [y_train[:1], np.zeros([1,res,res,2])],
+#            epochs = epochs, batch_size = batch_size,
+#            verbose = 0, shuffle = True)
 # =============================================================================
-#    from sklearn.model_selection import train_test_split
-#    X_train, X_test, Y_train, Y_test = train_test_split(
-#                                            x_train, y_train, test_size=0.25)
-#    
-#    history = sdn.fit(X_train, [Y_train, np.zeros([len(Y_train), res, res, 2])], 
-#                    epochs=epochs, batch_size=batch_size,
-#                    verbose = 0,
-#                    shuffle = True)
+    from sklearn.model_selection import train_test_split
+    X_train, X_test, Y_train, Y_test = train_test_split(
+                                            x_train, y_train, test_size=0.25)
+    
+    history = sdn.fit(X_train, [Y_train, np.zeros([len(Y_train), res, res, 2])], 
+                    epochs=epochs, batch_size=batch_size,
+                    verbose = 0,
+                    shuffle = True)
 #    
 #
     plt.figure()
     plt.plot(history.history['loss'])
 #    
-#    print('Mean J-score on test_set is {}'.format(j_score(Y_test, sdn.predict(X_test)[0])))
+    print('Mean J-score on test_set is {}'.format(j_score(Y_test, sdn.predict(X_test)[0])))
     see_warp(0)
+    
+#    plt.figure()
+#    disp = sdn.layers[-1].predict(x_train[:1])
+#    J = get_jacobian(disp)
+#    plt.imshow(J[0])
 

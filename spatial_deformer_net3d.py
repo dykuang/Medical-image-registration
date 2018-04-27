@@ -38,7 +38,7 @@ class SpatialDeformer3D(Layer):
 
     def call(self, X, mask=None): 
         deformation = self.locnet.call(X)
-        Y = tf.expand_dims(X[:,:,:,:,0], 4) # only transform the first channel
+        Y = tf.expand_dims(X[...,0], 4) # only transform the first channel
         output = self._transform(deformation, Y, self.output_size) 
         return output
 
@@ -175,16 +175,16 @@ class SpatialDeformer3D(Layer):
         y_coordinates = tf.reshape(y_coordinates, [-1])
         z_coordinates = tf.reshape(z_coordinates, [-1])
 
-        indices_grid = tf.concat([x_coordinates, y_coordinates, z_coordinates], 0
-                                 )
+        indices_grid = tf.concat([x_coordinates, y_coordinates, z_coordinates], 0)
+                                 
         return indices_grid
 
     def _transform(self, deformation, input_vol, output_size):
         batch_size = tf.shape(input_vol)[0]
         height = tf.shape(input_vol)[1]
         width = tf.shape(input_vol)[2]
-        depth = tf.shape(input_vol)
-        num_channels = tf.shape(input_vol)[3]
+        depth = tf.shape(input_vol)[3]
+        num_channels = tf.shape(input_vol)[4]
 
 
         width = tf.cast(width, dtype='float32')
@@ -203,7 +203,7 @@ class SpatialDeformer3D(Layer):
 
 
         deformation = tf.reshape(deformation, (-1, output_height * output_width * output_depth, 3))
-        deformation = tf.transpose(deformation, (0, 3, 1))
+        deformation = tf.transpose(deformation, (0, 2, 1))
 
         
         transformed_grid = indices_grid + deformation # are they of the same shape?
@@ -214,15 +214,15 @@ class SpatialDeformer3D(Layer):
         y_s_flatten = tf.reshape(y_s, [-1])
         z_s_flatten = tf.reshape(z_s, [-1])
 
-        transformed_image = self._interpolate(input_vol, # modify so it only transform the first channel?
+        transformed_vol = self._interpolate(input_vol, # modify so it only transform the first channel?
                                                 x_s_flatten,
                                                 y_s_flatten,
                                                 z_s_flatten,
                                                 output_size)
 
-        transformed_image = tf.reshape(transformed_image, shape=(batch_size,
+        transformed_vol = tf.reshape(transformed_vol, shape=(batch_size,
                                                                 output_height,
                                                                 output_width,
                                                                 output_depth,
-                                                                num_channels))
-        return transformed_image
+                                                                num_channels)) 
+        return transformed_vol

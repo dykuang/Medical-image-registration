@@ -264,17 +264,17 @@ if __name__ == '__main__':
                 )
 #    
 # =============================================================================
-    cat1 = imread('circ1.png', as_grey = True)
-#    from skimage import transform as tsf
-#    tform = tsf.SimilarityTransform(scale=0.8, rotation=0, translation=(0, 0))
-#    cat2 = tsf.warp(cat1, tform)
-    cat2 = imread('circ.png', as_grey = True)
-    cat1 = resize(cat1, (res,res), mode='reflect')
-    cat2 = resize(cat2, (res,res), mode='reflect')
-    x_train[0,:,:,0] = cat1
-    x_train[0,:,:,1] = cat2
-      
-    y_train[0,:,:,0] = cat2
+#    cat1 = imread('circ1.png', as_grey = True)
+##    from skimage import transform as tsf
+##    tform = tsf.SimilarityTransform(scale=0.8, rotation=0, translation=(0, 0))
+##    cat2 = tsf.warp(cat1, tform)
+#    cat2 = imread('circ.png', as_grey = True)
+#    cat1 = resize(cat1, (res,res), mode='reflect')
+#    cat2 = resize(cat2, (res,res), mode='reflect')
+#    x_train[0,:,:,0] = cat1
+#    x_train[0,:,:,1] = cat2
+#      
+#    y_train[0,:,:,0] = cat2
     
     history=sdn.fit(x_train[:1], y_train[:1],
             epochs = epochs, batch_size = batch_size,
