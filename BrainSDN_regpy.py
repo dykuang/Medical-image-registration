@@ -330,7 +330,7 @@ if __name__ == '__main__':
     sdn = Model(inputs, SDN(inputs))
     
     sdn.compile(loss = ['mse', total_variation_loss],
-                loss_weights = [1.0, 0.0002],
+                loss_weights = [1.0, 0.0001],
                 optimizer = Adam(decay=1e-5),
                 )
 #    
