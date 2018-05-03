@@ -20,7 +20,7 @@ from keras.losses import binary_crossentropy, kullback_leibler_divergence
 import keras.backend as K
 from spatial_deformer_net import SpatialDeformer
 
-
+from Utils import vis_grid
 #------------------------------------------------------------------------------
 # Some utility functions
 #------------------------------------------------------------------------------
@@ -56,50 +56,6 @@ def get_jacobian(disp):
     J = xx*yy - xy*yx
 
     return J
-
-def vis_grid(disp, direct = 2): # xy is of shape h*w*2
-     
-     w, h= np.shape(disp)[0], np.shape(disp)[1]
-     
-     x = np.linspace(-1., 1., w)
-     y = np.linspace(-1., 1., h)
-     
-     xx , yy = np.meshgrid(x, y)
-     
-     xy = np.stack([xx,yy], 2) + disp
-     
-     plt.figure()
-     
-     if direct == 0:
-          for row in range(w):
-               x, y = xy[row,:, 0], yy[row,:]       
-               plt.plot(x,y, color = 'b')
-#               plt.ylim(1,-1)
-          for col in range(h):
-               x, y = xy[:, col, 0], yy[:, col]       
-               plt.plot(x,y, color = 'b') 
-               plt.ylim(1,-1)
-               plt.axis('equal')
-     
-     elif direct == 1:  
-          for row in range(w):
-               x, y = xx[row,:], xy[row,:, 1]       
-               plt.plot(x,y, color = 'b')
-#               plt.ylim(1,-1)
-          for col in range(h):
-               x, y = xx[:, col], xy[:, col, 1]       
-               plt.plot(x,y, color = 'b') 
-               plt.ylim(1,-1)
-               plt.axis('equal')
-     else:
-          for row in range(w):
-               x, y = xy[row,:, 0], xy[row,:, 1]       
-               plt.plot(x,y, color = 'b')
-          for col in range(h):
-               x, y = xy[:, col, 0], xy[:, col, 1]       
-               plt.plot(x,y, color = 'b') 
-               plt.ylim(1,-1)
-               plt.axis('equal')
                
 from scipy import interpolate
 # output grid displacement at different resolutions by interpolation
@@ -221,12 +177,12 @@ def SDN_nopooling(inputs):
     
     zzz = Conv2DTranspose(64, (3,3), strides=(2,2), padding = 'same')(zzz) # A different upsampling
     
-    zzzz = multiply([zz, zzz]) 
+#    zzzz = multiply([zz, zzz]) 
     zzzz = Conv2D(2, (3,3), padding = 'same',
 #                      kernel_initializer= 'zeros',
 #                      bias_initializer = 'zeros',
 #                      activity_regularizer = l1(0.001),
-                      activation = 'tanh')(zzzz)
+                      activation = 'tanh')(zzz)
     
     locnet = Model(inputs, zzzz)
      
@@ -379,36 +335,36 @@ if __name__ == '__main__':
                 )
 #    
 # =============================================================================
-#    cat1 = imread('S08_095.png', as_grey = True)
-##    from skimage import transform as tsf
-##    tform = tsf.SimilarityTransform(scale=1.0, rotation=0, translation=(0, -10))
-##    cat2 = tsf.warp(cat1, tform)
-#    cat2 = imread('S09_085.png', as_grey = True)
-#    cat1 = resize(cat1, (res,res), mode='reflect')
-#    cat2 = resize(cat2, (res,res), mode='reflect')
-#    x_train[0,:,:,0] = cat1
-#    x_train[0,:,:,1] = cat2
-#      
-#    y_train[0,:,:,0] = cat2
-##    
-#    history = sdn.fit(x_train[:1], [y_train[:1], np.zeros([1,res,res,2])],
-#            epochs = epochs, batch_size = batch_size,
-#            verbose = 0, shuffle = True)
+    cat1 = imread('S08_095.png', as_grey = True)
+#    from skimage import transform as tsf
+#    tform = tsf.SimilarityTransform(scale=1.0, rotation=0, translation=(0, -10))
+#    cat2 = tsf.warp(cat1, tform)
+    cat2 = imread('S09_085.png', as_grey = True)
+    cat1 = resize(cat1, (res,res), mode='reflect')
+    cat2 = resize(cat2, (res,res), mode='reflect')
+    x_train[0,:,:,0] = cat1
+    x_train[0,:,:,1] = cat2
+      
+    y_train[0,:,:,0] = cat2
+#    
+    history = sdn.fit(x_train[:1], [y_train[:1], np.zeros([1,res,res,2])],
+            epochs = epochs, batch_size = batch_size,
+            verbose = 0, shuffle = True)
 # =============================================================================
-    from sklearn.model_selection import train_test_split
-    X_train, X_test, Y_train, Y_test = train_test_split(
-                                            x_train, y_train, test_size=0.25)
-    
-    history = sdn.fit(X_train, [Y_train, np.zeros([len(Y_train), res, res, 2])], 
-                    epochs=epochs, batch_size=batch_size,
-                    verbose = 0,
-                    shuffle = True)
+#    from sklearn.model_selection import train_test_split
+#    X_train, X_test, Y_train, Y_test = train_test_split(
+#                                            x_train, y_train, test_size=0.25)
 #    
-#
-    plt.figure()
-    plt.plot(history.history['loss'])
-#    
-    print('Mean J-score on test_set is {}'.format(j_score(Y_test, sdn.predict(X_test)[0])))
+#    history = sdn.fit(X_train, [Y_train, np.zeros([len(Y_train), res, res, 2])], 
+#                    epochs=epochs, batch_size=batch_size,
+#                    verbose = 0,
+#                    shuffle = True)
+##    
+##
+#    plt.figure()
+#    plt.plot(history.history['loss'])
+##    
+#    print('Mean J-score on test_set is {}'.format(j_score(Y_test, sdn.predict(X_test)[0])))
     see_warp(0)
     
 #    plt.figure()

@@ -48,7 +48,7 @@ class SpatialDeformer3D(Layer):
         x = tf.matmul(x, ones)
         return tf.reshape(x, [-1])
 
-    def _interpolate(self, image, x, y, z, output_size):  # tri-linear interpolation
+    def _interpolate(self, image, x, y, z, output_size):  # tri-linear interpolation y-x-z: height-width-depth. !!
         batch_size = tf.shape(image)[0]
         height = tf.shape(image)[1]
         width = tf.shape(image)[2]
@@ -67,7 +67,7 @@ class SpatialDeformer3D(Layer):
         output_width  = output_size[1]
         output_depth = output_size[2]
 
-        x = .5*(x + 1.0)*(width_float)
+        x = .5*(x + 1.0)*(width_float) 
         y = .5*(y + 1.0)*(height_float)
         z = .5*(z + 1.0)*(depth_float)
 
@@ -92,8 +92,8 @@ class SpatialDeformer3D(Layer):
         z1 = tf.clip_by_value(z1, zero, max_z)
 
         
-        xyslice_dimensions = width*height
-        flat_image_dimensions = xyslice_dimensions*depth
+        xzslice_dimensions = width*depth
+        flat_image_dimensions = xzslice_dimensions*height
         pixels_batch = tf.range(batch_size)*flat_image_dimensions
         flat_output_dimensions = output_height*output_width*output_depth
         base = self._repeat(pixels_batch, flat_output_dimensions)
@@ -102,24 +102,24 @@ class SpatialDeformer3D(Layer):
         #get indices for the eight corners       
         
         # the slice (depth)
-        base_z0 = base + z0*xyslice_dimensions
-        base_z1 = base + z1*xyslice_dimensions        
+        base_y0 = base + y0*xzslice_dimensions
+        base_y1 = base + y1*xzslice_dimensions        
         
         # row in each slice
-        base_00 = base_z0 + y0*width
-        base_01 = base_z0 + y1*width
-        base_10 = base_z1 + y0*width
-        base_11 = base_z1 + y1*width
+        base_00 = base_y0 + x0*width
+        base_01 = base_y0 + x1*width
+        base_10 = base_y1 + x0*width
+        base_11 = base_y1 + x1*width
  
         # each indices
-        indices_000 = base_00 + x0
-        indices_001 = base_00 + x1
-        indices_010 = base_01 + x0
-        indices_011 = base_01 + x1
-        indices_100 = base_10 + x0
-        indices_101 = base_10 + x1
-        indices_110 = base_11 + x0
-        indices_111 = base_11 + x1             
+        indices_000 = base_00 + z0
+        indices_001 = base_00 + z1
+        indices_010 = base_01 + z0
+        indices_011 = base_01 + z1
+        indices_100 = base_10 + z0
+        indices_101 = base_10 + z1
+        indices_110 = base_11 + z0
+        indices_111 = base_11 + z1             
 
         flat_image = tf.reshape(image, shape=(-1, num_channels))
         flat_image = tf.cast(flat_image, dtype='float32')
@@ -141,15 +141,15 @@ class SpatialDeformer3D(Layer):
         z0 = tf.cast(z0, 'float32')
         z1 = tf.cast(z1, 'float32')
         
-        
-        vol_000 = tf.expand_dims((x1-x)*(y1-y)*(z1-z) , 1)
-        vol_001 = tf.expand_dims((x1-x)*(y1-y)*(z-z0) , 1)
-        vol_010 = tf.expand_dims((x1-x)*(y-y0)*(z1-z) , 1)
-        vol_011 = tf.expand_dims((x1-x)*(y-y0)*(z-z0) , 1)
-        vol_100 = tf.expand_dims((x-x0)*(y1-y)*(z1-z) , 1)
-        vol_101 = tf.expand_dims((x-x0)*(y1-y)*(z-z0) , 1)
-        vol_110 = tf.expand_dims((x-x0)*(y-y0)*(z1-z) , 1)
-        vol_111 = tf.expand_dims((x-x0)*(y-y0)*(z-z0) , 1)
+        # must be careful here!!
+        vol_000 = tf.expand_dims((y1-y)*(x1-x)*(z1-z) , 1)
+        vol_001 = tf.expand_dims((y1-y)*(x1-x)*(z-z0) , 1)
+        vol_010 = tf.expand_dims((y1-y)*(x-x0)*(z1-z) , 1)
+        vol_011 = tf.expand_dims((y1-y)*(x-x0)*(z-z0) , 1)
+        vol_100 = tf.expand_dims((y-y0)*(x1-x)*(z1-z) , 1)
+        vol_101 = tf.expand_dims((y-y0)*(x1-x)*(z-z0) , 1)
+        vol_110 = tf.expand_dims((y-y0)*(x-x0)*(z1-z) , 1)
+        vol_111 = tf.expand_dims((y-y0)*(x-x0)*(z-z0) , 1)
        
         
         output = tf.add_n([vol_000*pixel_values_000,
@@ -205,7 +205,7 @@ class SpatialDeformer3D(Layer):
         deformation = tf.reshape(deformation, (-1, output_height * output_width * output_depth, 3))
         deformation = tf.transpose(deformation, (0, 2, 1))
 
-        
+#        transformed_grid = indices_grid
         transformed_grid = indices_grid + deformation # are they of the same shape?
         x_s = tf.slice(transformed_grid, [0, 0, 0], [-1, 1, -1]) #problem here?
         y_s = tf.slice(transformed_grid, [0, 1, 0], [-1, 1, -1])
@@ -225,4 +225,5 @@ class SpatialDeformer3D(Layer):
                                                                 output_width,
                                                                 output_depth,
                                                                 num_channels)) 
-        return transformed_vol
+        
+        return transformed_vol 
