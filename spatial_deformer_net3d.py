@@ -106,10 +106,10 @@ class SpatialDeformer3D(Layer):
         base_y1 = base + y1*xzslice_dimensions        
         
         # row in each slice
-        base_00 = base_y0 + x0*width
-        base_01 = base_y0 + x1*width
-        base_10 = base_y1 + x0*width
-        base_11 = base_y1 + x1*width
+        base_00 = base_y0 + x0*depth
+        base_01 = base_y0 + x1*depth
+        base_10 = base_y1 + x0*depth
+        base_11 = base_y1 + x1*depth
  
         # each indices
         indices_000 = base_00 + z0
