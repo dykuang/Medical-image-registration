@@ -8,11 +8,45 @@ This script will contain some utility functions
 
 import numpy as np
 
+#===============================================================================
+# Calculate the Jacobian
+#===============================================================================
+def Jac(x):
 
+    height, width, depth, num_channel = x.shape
+    num_voxel = (height-1)*(width-1)*(depth-1)
+
+    dx = np.reshape(x[1:,:-1,:-1,:]-x[:-1,:-1,:-1,:], [num_voxel, num_channel])
+    dy = np.reshape(x[:-1,1:,:-1,:]-x[:-1,:-1,:-1,:], [num_voxel, num_channel])
+    dz = np.reshape(x[:-1,:-1,1:,:]-x[:-1,:-1,:-1,:], [num_voxel, num_channel])
+    J = np.stack([dx, dy, dz], 2)
+    return np.reshape(J, [height-1, width-1, depth-1, 3, 3])
+
+def Jac_2nd(x):
+
+    height, width, depth, num_channel = x.shape
+    num_voxel = (height-2)*(width-2)*(depth-2)
+
+    dx = np.reshape(0.5*(x[2:,1:-1,1:-1,:]-x[:-2,1:-1,1:-1,:]), [num_voxel, num_channel])
+    dy = np.reshape(0.5*(x[1:-1,2:,1:-1,:]-x[1:-1,:-2,1:-1,:]), [num_voxel, num_channel])
+    dz = np.reshape(0.5*(x[1:-1,1:-1,2:,:]-x[1:-1,1:-1,:-2,:]), [num_voxel, num_channel])
+    J = np.stack([dx, dy, dz], 2)
+    return np.reshape(J, [height-2, width-2, depth-2, 3, 3])
+
+def Jac_5(x):
+
+    height, width, depth, num_channel = x.shape
+    num_voxel = (height-4)*(width-4)*(depth-4)
+
+    dx = np.reshape((x[:-4,2:-2,2:-2,:]-8*x[1:-3,2:-2,2:-2,:] + 8*x[3:-1,2:-2,2:-2,:] - x[4:,2:-2,2:-2,:])/12.0, [num_voxel, num_channel])
+    dy = np.reshape((x[2:-2,:-4,2:-2,:]-8*x[2:-2,1:-3,2:-2,:] + 8*x[2:-2,3:-1,2:-2,:] - x[2:-2,4:,2:-2,:])/12.0, [num_voxel, num_channel])
+    dz = np.reshape((x[2:-2,2:-2,:-4,:]-8*x[2:-2,2:-2,1:-3,:] + 8*x[2:-2,2:-2,3:-1,:] - x[2:-2,2:-2,4:,:])/12.0, [num_voxel, num_channel])
+    J = np.stack([dx, dy, dz], 2)
+    return np.reshape(J, [height-4, width-4, depth-4, 3, 3])
 
 #==============================================================================
 
-# Calculate the Jacobian of the transformation
+# Calculate the Determinent of Jacobian of the transformation
 
 #==============================================================================
 
@@ -28,35 +62,35 @@ def Get_Ja(displacement):
 
     
 
-    dx = 2/displacement.shape[1]
+    dx = displacement.shape[1]/2.0
 
-    dy = 2/displacement.shape[2]
+    dy = displacement.shape[2]/2.0
 
-    dz = 2/displacement.shape[3]
-
-    
-
-    D_x = displacement[:,1:,:-1,:-1,:] - displacement[:,:-1,:-1,:-1,:]
-
-    D_y = displacement[:,:-1,1:,:-1,:] - displacement[:,:-1,:-1,:-1,:]
-
-    D_z = displacement[:,:-1,:-1,1:,:] - displacement[:,:-1,:-1,:-1,:]
+    dz = displacement.shape[3]/2.0
 
     
 
-    D1 = D_x[...,0]*(D_y[...,1]*D_z[...,2] - D_z[...,1]*D_y[...,2])
+    D_x = dx*(displacement[:,1:,:-1,:-1,:] - displacement[:,:-1,:-1,:-1,:])
 
-    D2 = D_y[...,0]*(D_x[...,1]*D_z[...,2] - D_z[...,1]*D_x[...,2])
+    D_y = dy*(displacement[:,:-1,1:,:-1,:] - displacement[:,:-1,:-1,:-1,:])
 
-    D3 = D_z[...,0]*(D_x[...,1]*D_y[...,2] - D_y[...,1]*D_z[...,2])
+    D_z = dz*(displacement[:,:-1,:-1,1:,:] - displacement[:,:-1,:-1,:-1,:])
 
     
 
-    return (D1-D2+D3)/(dx*dy*dz)
+    D1 = (D_x[...,0]+1)*( (D_y[...,1]+1)*(D_z[...,2]+1) - D_z[...,1]*D_y[...,2])
+
+    D2 = (D_x[...,1])*(D_y[...,0]*(D_z[...,2]+1) - D_y[...,2]*D_x[...,0])
+
+    D3 = (D_x[...,2])*(D_y[...,0]*D_z[...,1] - (D_y[...,1]+1)*D_z[...,0])
+
+    
+
+    return np.linalg.norm(D1-D2+D3)
 
 
 #==============================================================================
-# Apply interpolation, could just use interpn from scipy...
+# Apply interpolation
 #=============================================================================+
 def repeat(x, num_repeats): # copy along the second dimension, each row is a copy of an index
     ones = np.ones((1, num_repeats), dtype='int32')
@@ -83,7 +117,7 @@ def interpolate(image, x, y, z, output_size):  # tri-linear interpolation y-x-z:
     output_width  = output_size[1]
     output_depth = output_size[2]
 
-    x = .5*(x + 1.0)*(width_float-1) # difference of '-1' 
+    x = .5*(x + 1.0)*(width_float-1) 
     y = .5*(y + 1.0)*(height_float-1)
     z = .5*(z + 1.0)*(depth_float-1)
 
@@ -140,24 +174,25 @@ def interpolate(image, x, y, z, output_size):  # tri-linear interpolation y-x-z:
     flat_image = np.reshape(image, (-1, num_channels))
 #    flat_image = np.cast(flat_image, dtype='float32')
         
-    pixel_values_000 = np.take(flat_image, indices_000)
-    pixel_values_001 = np.take(flat_image, indices_001)
-    pixel_values_010 = np.take(flat_image, indices_010)
-    pixel_values_011 = np.take(flat_image, indices_011)          
-    pixel_values_100 = np.take(flat_image, indices_100)
-    pixel_values_101 = np.take(flat_image, indices_101)
-    pixel_values_110 = np.take(flat_image, indices_110)
-    pixel_values_111 = np.take(flat_image, indices_111)       
- 
-   # must be careful here!!
-    vol_000 = (y1-y)*(x1-x)*(z1-z)
-    vol_001 = (y1-y)*(x1-x)*(z-z0)
-    vol_010 = (y1-y)*(x-x0)*(z1-z)
-    vol_011 = (y1-y)*(x-x0)*(z-z0)
-    vol_100 = (y-y0)*(x1-x)*(z1-z)
-    vol_101 = (y-y0)*(x1-x)*(z-z0)
-    vol_110 = (y-y0)*(x-x0)*(z1-z)
-    vol_111 = (y-y0)*(x-x0)*(z-z0)
+    pixel_values_000 = flat_image[indices_000,:]
+    pixel_values_001 = flat_image[indices_001,:]
+    pixel_values_010 = flat_image[indices_010,:]
+    pixel_values_011 = flat_image[indices_011,:]          
+    pixel_values_100 = flat_image[indices_100,:]
+    pixel_values_101 = flat_image[indices_101,:]
+    pixel_values_110 = flat_image[indices_110,:]
+    pixel_values_111 = flat_image[indices_111,:]       
+       
+        
+    # must be careful here!!
+    vol_000 = np.expand_dims((y1-y)*(x1-x)*(z1-z),1)
+    vol_001 = np.expand_dims((y1-y)*(x1-x)*(z-z0),1)
+    vol_010 = np.expand_dims((y1-y)*(x-x0)*(z1-z),1)
+    vol_011 = np.expand_dims((y1-y)*(x-x0)*(z-z0),1)
+    vol_100 = np.expand_dims((y-y0)*(x1-x)*(z1-z),1)
+    vol_101 = np.expand_dims((y-y0)*(x1-x)*(z-z0),1)
+    vol_110 = np.expand_dims((y-y0)*(x-x0)*(z1-z),1)
+    vol_111 = np.expand_dims((y-y0)*(x-x0)*(z-z0),1)
        
  
     output = vol_000*pixel_values_000+\
@@ -172,7 +207,7 @@ def interpolate(image, x, y, z, output_size):  # tri-linear interpolation y-x-z:
     return output
 
 def meshgrid(height, width, depth):
-    x_linspace = np.linspace(-1., 1., width) 
+    x_linspace = np.linspace(-1., 1., width)
     y_linspace = np.linspace(-1., 1., height)
     z_linspace = np.linspace(-1., 1., depth)
         
@@ -236,8 +271,7 @@ def transform(deformation, input_vol, output_size):
         
     return transformed_vol 
 
-#===============================================================================
-# Mesurement
+#===============================================================================# Mesurement
 #===============================================================================               
 from sklearn.metrics import jaccard_similarity_score
 def j_score(yTrue, yPred):
@@ -251,8 +285,7 @@ def j_score(yTrue, yPred):
 def Dice(y_true, y_pred):
      T = (y_true.flatten()>0)
      P = (y_pred.flatten()>0)
-     #T = y_true
-     #P = y_pred
+
      return 2*np.sum(T*P)/(np.sum(T) + np.sum(P))
 
 def count_dice(before, after):
