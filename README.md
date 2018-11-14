@@ -19,4 +19,4 @@ It is a project for developing registration tools with neural networks, applicab
 
 
 ### output
-Contains generated label probabilities and a volume of winning labels with `Gen_temp.py` on [LPBA40 data set](http://resource.loni.usc.edu/resources/atlases-downloads/) and `OASIS-TRT-20` dataset used in [MindBoggle101](https://mindboggle.info/data)
+Contains generated label probabilities and a volume of winning labels with `Gen_temp.py` on [LPBA40 data set](http://resource.loni.usc.edu/resources/atlases-downloads/) and also on `OASIS-TRT-20` dataset used in [MindBoggle101](https://mindboggle.info/data)
