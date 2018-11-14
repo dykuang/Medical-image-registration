@@ -1,0 +1,37 @@
+
+old_codes/Explorations/spatial_deformer_net3d_copy.py
+old_codes/Explorations/sdn_test.py
+old_codes/Explorations/sdn_septrans.py
+old_codes/Explorations/SDN3d_w_mask.py
+old_codes/Explorations/SDN3d_LR_as.py
+old_codes/Explorations/SDN3d_LR.py
+old_codes/Explorations/SDN3d_eval_par.py
+old_codes/Explorations/SDN3d_eval_2pass.py
+old_codes/Explorations/SDN3d_diceLoss.py
+old_codes/Explorations/SDN3d_2stage.py
+old_codes/Explorations/SDN3d_2pass.py
+old_codes/Explorations/Reg_test_oasis.py
+old_codes/Explorations/BrainSDN_pcloss.py
+old_codes/Explorations/BrainSDN.py
+old_codes/Explorations/BrainSDN-VGG.py
+old_codes/Explorations/BrainGAN.py
+old_codes/Current in use/visual.py
+old_codes/Current in use/view_dice.py
+old_codes/Current in use/Utils1.py
+old_codes/Current in use/Utils.py
+old_codes/Current in use/spatial_transformer_net3d.py
+old_codes/Current in use/spatial_transformer_net.py
+old_codes/Current in use/spatial_deformer_net3d.py
+old_codes/Current in use/spatial_deformer_net.py
+old_codes/Current in use/SDN3d_train.py
+old_codes/Current in use/SDN3d_PR2.py
+old_codes/Current in use/SDN3d_PR.py
+old_codes/Current in use/SDN3d_fortuning.py
+old_codes/Current in use/SDN3d_eval.py
+old_codes/Current in use/PF_LR.py
+old_codes/Current in use/losses.py
+old_codes/Current in use/Gen_temp.py
+old_codes/Current in use/BrainSDN_reg.py
+old_codes/Current in use/architecture.py
+old_codes/Current in use/__pycache__/visual.cpython-36.pyc
+old_codes/Current in use/__pycache__/Utils.cpython-36.pyc
