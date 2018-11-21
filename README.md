@@ -2,6 +2,15 @@
 It is a project for developing registration tools with neural networks, applicable to other image registration tasks. Code is written using `Keras` with `Tensorflow` backend. `SimpleITK` is used to read from and write to ``.nii`` or other medical image formats. All data contained in this repository is in `.npy` format. The code here is directly applicable to grey level images. For RGB images, one should modify the codes accordingly. Input should be of format `(batchsize, height, width, channel)` in 2D cases and `(batchsize, height, width, depth, channel)` in 3D cases. In both cases, the first channel will store the source image, the target image is stacked to the second channel.
 
 
+### An overview
+The following figure is an overview of the network's work flow:
+<img src = 'Architecture.png' height="320" width="680">
+
+A comparison with other methods. Only one slice of warped image volumn is shown here:
+<img src = 'MB_pred.png' height="240" width="600">
+
+Determinant of Jacobian of predicted deformation at the same slice as above:
+<img src = 'MB_Djac_8081_r.png' height="240" width="600">
 ### source
 * `architecture.py`: contains some network architectures for learning the proper displacement field.
 * `losses.py`: contains some losses/regularization functions.
