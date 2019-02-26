@@ -279,12 +279,27 @@ def Dice_bar_group(data, group_names, legend_names, colors):
 #       2014, 2015, 2016, 2017, 2018, 2021, 2022, 2024, 2025,
 #       2028, 2029, 2030, 2031, 2034, 2035]
 #
-#    Frontal = 1000*[3, 12, 14, 17, 18, 19, 20, 24, 27, 28] + 2000*[3, 12, 14, 17, 18, 19, 20, 24, 27, 28]
-#    Parietal = 1000*[8, 22, 25, 29, 31] + 2000*[8, 22, 25, 29, 31]
-#    Occipital = 1000*[5, 11, 13, 21] + 2000*[5, 11, 13, 21]
-#    Temporal = 1000*[6, 7, 9, 15, 16, 30, 34] + 2000*[6, 7, 9, 15, 16, 30, 34]
-#    Cingulate= 1000*[2, 10, 23, 26, 35] + 2000*[2, 10, 23, 26, 35]
+#    Frontal_label = [1000 + i for i in[3, 12, 14, 17, 18, 19, 20, 24, 27, 28]] + [2000+ j for j in[3, 12, 14, 17, 18, 19, 20, 24, 27, 28]]
+#    Parietal_label = [1000 + i for i in [8, 22, 25, 29, 31]] + [2000 + j for j in [8, 22, 25, 29, 31]]
+#    Occipital = [1000 + i for i in [5, 11, 13, 21]] + [2000 + j for j in [5, 11, 13, 21]]
+#    Temporal = [1000 + i for i in [6, 7, 9, 15, 16, 30, 34]] + [2000 + i for i in [6, 7, 9, 15, 16, 30, 34]]
+#    Cingulate = [1000 + i for i in [2, 10, 23, 26, 35]] + [2000 + i for i in [2, 10, 23, 26, 35]]
 #    
+#    def find_label(group, label_list = label_list_25): 
+#    '''
+#    Find label index of given group in the label_list
+#    '''
+#        label_found = []
+#        for i in range(len(label_list)):
+#            if label_list[i] in group:
+#                label_found.append(i)
+#        return label_found
+#    
+#    Frontal = find_label(Frontal_label)
+#    Parietal = find_label(Parietal_label)
+#    Occipital = find_label(Occipital)
+#    Temporal = find_label(Temporal)
+#    Cingulate= find_label(Cingulate)
 #    
 #    Dice_before = np.load('dice_before.npy')
 #    Dice_UTR = np.load('Dice_after_UTR20.npy')
