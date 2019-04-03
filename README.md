@@ -6,16 +6,22 @@ Feel free to check https://arxiv.org/abs/1811.09243 for more details. The projec
 The following figure is an overview of the network's work flow:
 <img src = 'Architecture.png' height="320" width="680">
 
-A comparison with other methods. 
-<img src = 'Fig4.png' height="240" width="600">
+
+A comparison with other methods:
+Deforming source image to target image:
+<img src = 'MB_pred.png' height="240" width="600">
+
+Deforming source label to target label: 
+<img src = 'Fig4.png' height="220" width="600">
 
 "Foldings", i.e locations where the transformation has negative Jacobian determinants in predicted deformation can be addressed either using a hard constraint by penalizaing negative Jacobian determinants in the loss function or a soft constraint by different training mechanism without changing the configuration of baseline registration network.
 
-Effect of penalizaing negative Jacobian determinants in the predicted deformation:
-<img src = 'Jachange.png' height="400" width="600">
+Effect of penalizaing negative Jacobian determinants in the predicted deformation (folding locations shown in red):
+<img src = 'Jachange.png' height="300" width="600">
 
 Effect of using cycle consistent design and refinement module on the baseline network.
 <img src = 'CheckJac_short.png' height="200" width="600">
+
 ### source
 * `architecture.py`: contains some network architectures for learning the proper displacement field.
 * `losses.py`: contains some losses/regularization functions.
@@ -27,7 +33,7 @@ Effect of using cycle consistent design and refinement module on the baseline ne
 * `visual.py`: Contains some functions for visualization.
 * `view_dice.py`: Contains some functions that make summary plots when comparing dice score from different methods.
 * `train.py`: Main script training the network.
-* `train_MB_invcomp.py: Train the network with a cycle consistent design.
+* `train_MB_invcomp.py`: Train the network with a cycle consistent design.
 * `train_refine_alt.py`: Alternative training with a refinement module for refining the displacement field. 
 * `eval.py`: Eval the trained model on test data in terms of dice score.
 * `pred_samples.py`: Used to generate samples from prediction.
