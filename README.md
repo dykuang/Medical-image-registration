@@ -11,19 +11,19 @@ A comparison with other methods:
 
 Deforming source image to target image:
 
-<img src = 'MB_pred.png' height="240" width="600">
+<img src = 'warped.png' height="300" width="600">
 
 Deforming source label to target label: 
 
 <img src = 'Fig4.png' height="220" width="600">
 
-"Foldings", i.e locations where the transformation has negative Jacobian determinants in predicted deformation can be addressed either using a hard constraint by penalizaing negative Jacobian determinants in the loss function or a soft constraint by different training mechanism without changing the configuration of baseline registration network.
+"Foldings", i.e locations where the transformation has negative Jacobian determinants in predicted deformation can be addressed either by using a hard constraint penalizaing negative Jacobian determinants in the loss function or a soft constraint by different training mechanism without changing the configuration of baseline registration network.
 
 Effect of penalizaing negative Jacobian determinants in the predicted deformation (folding locations shown in red):
 <img src = 'Jachange.png' height="300" width="600">
 
 Effect of using cycle consistent design and refinement module on the baseline network.
-<img src = 'CheckJac_short.png' height="200" width="600">
+<img src = 'CheckJac_short.png' height="160" width="600">
 
 ### source
 * `architecture.py`: contains some network architectures for learning the proper displacement field.
