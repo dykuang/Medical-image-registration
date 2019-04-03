@@ -32,6 +32,8 @@ par = {'res1': 144,
        'w2': 0.0,
 
        'cc_size': 9, 
+       
+       'NJ loss': 1e-3
        }
 
 print(par)
@@ -101,8 +103,11 @@ sdn = Model(inputs, [warped, disp_M(inputs)])
 print(sdn.layers[-1].summary())
 #print(sdn.layers)
 
-from losses import cc3D, gradientLoss
-sdn.compile(loss = [cc3D(win=[par['cc_size'],par['cc_size'],par['cc_size']]), gradientLoss('l2')],
+from losses import cc3D, gradientLoss, NJ_loss
+def reg_loss(y_true, y_pred):
+    return gradientLoss('l2')(y_true, y_pred) + par['NJ loss']*NJ_loss(y_true, y_pred)
+
+sdn.compile(loss = [cc3D(win=[par['cc_size'],par['cc_size'],par['cc_size']]), reg_loss],
             loss_weights = par['loss_weights'],
             optimizer = Adam(lr = par['lr'], decay = 1e-4) )
 
