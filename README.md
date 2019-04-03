@@ -1,17 +1,20 @@
 # Medical-image-registration
 It is a project for developing registration tools with neural networks, applicable to other image registration tasks. Code is written using `Keras` with `Tensorflow` backend. `SimpleITK` is used to read from and write to ``.nii`` or other medical image formats. All data contained in this repository is in `.npy` format. The code here is directly applicable to grey level images. For RGB images, one should modify the codes accordingly. Input should be of format `(batchsize, height, width, channel)` in 2D cases and `(batchsize, height, width, depth, channel)` in 3D cases. In both cases, the first channel will store the source image, the target image is stacked to the second channel.
 
-Feel free to check https://arxiv.org/abs/1811.09243 for more details. The project is still ongoing, please expect more to come.
+Feel free to check https://arxiv.org/abs/1811.09243 for more details. The project is still ongoing, more details will be released.
 ### An overview
 The following figure is an overview of the network's work flow:
 <img src = 'Architecture.png' height="320" width="680">
 
 
 A comparison with other methods:
+
 Deforming source image to target image:
+
 <img src = 'MB_pred.png' height="240" width="600">
 
 Deforming source label to target label: 
+
 <img src = 'Fig4.png' height="220" width="600">
 
 "Foldings", i.e locations where the transformation has negative Jacobian determinants in predicted deformation can be addressed either using a hard constraint by penalizaing negative Jacobian determinants in the loss function or a soft constraint by different training mechanism without changing the configuration of baseline registration network.
