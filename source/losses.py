@@ -72,6 +72,38 @@ def TvsLoss(penalty = 'l1', w1=1, w2=0):
         return w1*d/3.0+ w2*D
     return loss
 
+def Get_Ja(displacement):
+
+    '''
+    Calculate the Jacobian value at each point of the displacement map having
+
+    size of b*h*w*d*3 and in the cubic volumn of [-1, 1]^3
+
+    '''
+
+    D_y = (displacement[:,1:,:-1,:-1,:] - displacement[:,:-1,:-1,:-1,:])
+
+    D_x = (displacement[:,:-1,1:,:-1,:] - displacement[:,:-1,:-1,:-1,:])
+
+    D_z = (displacement[:,:-1,:-1,1:,:] - displacement[:,:-1,:-1,:-1,:])
+
+
+
+    D1 = (D_x[...,0]+1)*( (D_y[...,1]+1)*(D_z[...,2]+1) - D_z[...,1]*D_y[...,2])
+
+    D2 = (D_x[...,1])*(D_y[...,0]*(D_z[...,2]+1) - D_y[...,2]*D_x[...,0])
+
+    D3 = (D_x[...,2])*(D_y[...,0]*D_z[...,1] - (D_y[...,1]+1)*D_z[...,0])
+
+    return D1-D2+D3
+
+def NJ_loss(y_true, ypred): 
+    '''
+    Penalizing locations where Jacobian has negative determinants
+    '''
+    Neg_Jac = 0.5*(tf.abs(Get_Ja(ypred)) - Get_Ja(ypred))
+    return tf.reduce_sum(Neg_Jac)
+
 #==============================================================================
 # Modified from  https://github.com/balakg/voxelmorph/losses
 #==============================================================================
