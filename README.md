@@ -25,7 +25,10 @@ Effect of penalizaing negative Jacobian determinants in the predicted deformatio
 Effect of using cycle consistent design and refinement module on the baseline network.
 <img src = 'CheckJac_short.png' height="160" width="600">
 
-### source
+### Preprocess
+It is assumed that source and target are already roughly linearly aligned. Each image volume is normalized by its maximum intensity.
+
+### Source
 * `architecture.py`: contains some network architectures for learning the proper displacement field.
 * `losses.py`: contains some losses/regularization functions.
 * `spatial_deformer_net.py`: a module taking learned displacement field to warp input images in 2D.
@@ -43,5 +46,5 @@ Effect of using cycle consistent design and refinement module on the baseline ne
 * `Gen_temp.py`: Used to generate average image and produce probability labels when constructing atlas.
 
 
-### output
+### Output
 Contains generated label probabilities and a volume of winning labels with `Gen_temp.py` on [LPBA40 data set](http://resource.loni.usc.edu/resources/atlases-downloads/) and also on `OASIS-TRT-20` dataset used in [MindBoggle101](https://mindboggle.info/data)
