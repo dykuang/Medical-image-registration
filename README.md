@@ -11,7 +11,7 @@ A comparison with other methods:
 
 Deforming source image to target image:
 
-<img src = 'warped.png' height="300" width="600">
+<img src = 'warped.png' height="400" width="640">
 
 Deforming source label to target label: 
 
