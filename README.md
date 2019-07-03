@@ -29,6 +29,8 @@ Effect of using cycle consistent design and refinement module on the baseline ne
 ### Preprocess
 It is assumed that source and target are already roughly linearly aligned. Each image volume is normalized by its maximum intensity.
 
+`.npy` files used in the code are read from original format `.nii, .nii.gz, .hdr` or `.img` using `SimpleITK` package. Possible modifications will be needed if other pakcages like `nibabel` is used for IO.
+
 ### Source
 * `architecture.py`: contains some network architectures for learning the proper displacement field.
 * `losses.py`: contains some losses/regularization functions.
