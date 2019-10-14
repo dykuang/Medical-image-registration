@@ -1,7 +1,7 @@
 # Medical-image-registration
 It is a project for developing registration tools with neural networks, applicable to other image registration tasks. Code is written using `Keras` with `Tensorflow` backend. `SimpleITK` is used to read from and write to ``.nii`` or other medical image formats. All data contained in this repository is in `.npy` format. The code here is directly applicable to grey level images. For RGB images, one should modify the codes accordingly. Input should be of format `(batchsize, height, width, channel)` in 2D cases and `(batchsize, height, width, depth, channel)` in 3D cases. In both cases, the first channel will store the source image, the target image is stacked to the second channel.
 
-Feel free to check ["FAIM -- A ConvNet Method for Unsupervised 3D Medical Image Registration"](https://arxiv.org/abs/1811.09243) and ["On Reducing Negative Jacobian Determinant of the Deformation Predicted by Deep Registration Networks"](https://arxiv.org/abs/1907.00068) for more details. 
+Feel free to check ["FAIM -- A ConvNet Method for Unsupervised 3D Medical Image Registration"](https://link.springer.com/chapter/10.1007%2F978-3-030-32692-0_74) and ["On Reducing Negative Jacobian Determinant of the Deformation Predicted by Deep Registration Networks"](https://link.springer.com/chapter/10.1007%2F978-3-030-32778-1_13) for more details. 
 
 ### An overview
 The following figure is an overview of the network's work flow:
